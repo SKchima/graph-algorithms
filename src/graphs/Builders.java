@@ -3,8 +3,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Scanner;
 
-public class GraphBuilder {
-    public UndirectedGraph undirectedGraphBuilder(File file) throws FileNotFoundException {
+public class Builders {
+    public static UndirectedGraph undirectedGraphBuilder(File file) throws FileNotFoundException {
         UndirectedGraph graph = new UndirectedGraph();
 
         Scanner sc = new Scanner(file);

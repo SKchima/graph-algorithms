@@ -1,0 +1,9 @@
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+out/
+# se estiver usando o sistema de build do IntelliJ
+
+# Compiled class files
+*.class
