@@ -14,7 +14,7 @@ public class Builders {
             if (tokens.length == 2) {
                 String from = tokens[0];
                 String to = tokens[1];
-                graph.addEdge(from, to);
+                graph.addEdge(new Graph.Vertex(from), new Graph.Vertex(to));
             } else {
                 String vertex = tokens[0];
                 graph.addVertex(vertex);
@@ -35,7 +35,7 @@ public class Builders {
             if (tokens.length == 2) {
                 String from = tokens[0];
                 String to = tokens[1];
-                graph.addEdge(from, to);
+                graph.addEdge(new Graph.Vertex(from), new Graph.Vertex(to));
             } else {
                 String vertex = tokens[0];
                 graph.addVertex(vertex);
