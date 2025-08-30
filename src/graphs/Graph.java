@@ -109,25 +109,26 @@ public abstract class Graph {
 
 
     // ------------------------------ COMMON ALGORITHMS ------------------------------ //
-/*
+
     public boolean hasCycles() {
         Set<Vertex> visited = new HashSet<>();
         for (Vertex v : this.vertices) {
             if (!visited.contains(v)) {
-                hasCyclesR(visited, v);
+                if (hasCyclesR(visited, v, v)) return true;
             }
         }
+        return false;
     }
 
-    private boolean hasCyclesR(Set<Vertex> visited, Vertex current) {
+    private boolean hasCyclesR(Set<Vertex> visited, Vertex current, Vertex previous) {
         visited.add(current);
 
         for (Vertex v : this.adjacencyMap.get(current)) {
-
-
+            if (visited.contains(v) && v != previous) return false;
+            return hasCyclesR(visited, v, current);
         }
+        return true;
     }
-*/
 
     public int distanceBFS(Vertex from, Vertex to) {
         Set<Vertex> visited = new HashSet<>();

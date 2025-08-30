@@ -58,6 +58,8 @@ public class UndirectedGraph extends Graph {
     }
 
     @Override
+    private
+    @Override
     public UndirectedGraph treeBFS(Vertex root) {
         return null;
     }
