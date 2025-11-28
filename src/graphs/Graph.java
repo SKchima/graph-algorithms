@@ -43,6 +43,7 @@ public abstract class Graph {
     // ------------------------------ ATTRIBUTES ------------------------------ //
 
     public final Set<Vertex> vertices = new HashSet<>();
+    public final Map<String, Vertex> vertexMap = new HashMap<>();
     public final Set<Edge> edges = new HashSet<>();
     public final Map<Vertex, Set<Vertex>> adjacencyMap = new HashMap<>();
 
@@ -50,21 +51,23 @@ public abstract class Graph {
     // ------------------------------ COMMON METHODS ------------------------------ //
 
     public Vertex getVertexById(String id) {
-        return vertices.stream().filter(v -> v.id().equals(id)).findFirst().orElse(null);
+        return vertexMap.get(id);
     }
 
     public Vertex addVertex(String id) {
+        if (getVertexById(id) != null) return getVertexById(id);
         Vertex v = new Vertex(id);
-        if (this.vertices.add(v)) {
-            this.adjacencyMap.put(v, new HashSet<>());
-        }
+        this.vertices.add(v);
+        this.vertexMap.put(id, v);
+        this.adjacencyMap.put(v, new HashSet<>());
         return v;
     }
 
     public void addVertex(Vertex v) {
-        if (this.vertices.add(v)) {
-            this.adjacencyMap.put(v, new HashSet<>());
-        }
+        if (getVertexById(v.id) != null) return;
+        this.vertices.add(v);
+        this.vertexMap.put(v.id, v);
+        this.adjacencyMap.put(v, new HashSet<>());
     }
 
 
@@ -92,6 +95,7 @@ public abstract class Graph {
     }
 
     public int minDegree() {
+        if (vertices.isEmpty()) return 0;
         int minimum = Integer.MAX_VALUE;
         for (Vertex v : this.vertices) {
             minimum = Math.min(minimum, adjacencyMap.get(v).size());
@@ -100,6 +104,7 @@ public abstract class Graph {
     }
 
     public int maxDegree() {
+        if (vertices.isEmpty()) return 0;
         int maximum = Integer.MIN_VALUE;
         for (Vertex v : this.vertices) {
             maximum = Math.max(maximum, adjacencyMap.get(v).size());
@@ -110,43 +115,26 @@ public abstract class Graph {
 
     // ------------------------------ COMMON ALGORITHMS ------------------------------ //
 
-    public boolean hasCycles() {
-        Set<Vertex> visited = new HashSet<>();
-        for (Vertex v : this.vertices) {
-            if (!visited.contains(v)) {
-                if (hasCyclesR(visited, v, v)) return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean hasCyclesR(Set<Vertex> visited, Vertex current, Vertex previous) {
-        visited.add(current);
-
-        for (Vertex v : this.adjacencyMap.get(current)) {
-            if (visited.contains(v) && v != previous) return false;
-            return hasCyclesR(visited, v, current);
-        }
-        return true;
-    }
-
     public int distanceBFS(Vertex from, Vertex to) {
         Set<Vertex> visited = new HashSet<>();
-
         Queue<Vertex> queue = new LinkedList<>();
         queue.add(from);
+        visited.add(from);
 
         int distance = 0;
         while (!queue.isEmpty()) {
-            Vertex current = queue.poll();
-            visited.add(current);
-            distance++;
-            for (Vertex neighbor : this.adjacencyMap.get(current)) {
-                if (!visited.contains(neighbor)) {
-                    if (neighbor == to) return distance;
-                    queue.add(neighbor);
+            int levelSize = queue.size();
+            for (int i = 0; i < levelSize; i++) {
+                Vertex current = queue.poll();
+                if (current.equals(to)) return distance;
+                for (Vertex neighbor : this.adjacencyMap.get(current)) {
+                    if (!visited.contains(neighbor)) {
+                        visited.add(neighbor);
+                        queue.add(neighbor);
+                    }
                 }
             }
+            distance++;
         }
         return -1;
     }
@@ -177,6 +165,8 @@ public abstract class Graph {
 */
     // ------------------------------ ABSTRACT ALGORITHMS ------------------------------ //
 
+
+    public abstract boolean hasCycles();
 
     public abstract Graph treeBFS(Vertex root);
 }

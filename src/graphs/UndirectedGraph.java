@@ -1,6 +1,8 @@
 package graphs;
 
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 public class UndirectedGraph extends Graph {
 
@@ -57,8 +59,26 @@ public class UndirectedGraph extends Graph {
         }
     }
 
-    @Override
-    private
+    public boolean hasCycles() {
+        Set<Vertex> visited = new HashSet<>();
+        for (Vertex v : this.vertices) {
+            if (!visited.contains(v)) {
+                if (hasCyclesR(visited, v, null)) return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean hasCyclesR(Set<Vertex> visited, Vertex current, Vertex previous) {
+        visited.add(current);
+        for (Vertex v : this.adjacencyMap.get(current)) {
+            if (v == previous) continue;
+            if (visited.contains(v)) return true;
+            if (hasCyclesR(visited, v, current)) return true;
+        }
+        return false;
+    }
+
     @Override
     public UndirectedGraph treeBFS(Vertex root) {
         return null;
