@@ -23,7 +23,8 @@ public abstract class Graph {
 
         @Override
         public boolean equals(Object o) {
-            if (o == null || this.getClass() != o.getClass()) return false;
+            if (o == null || this.getClass() != o.getClass())
+                return false;
             Edge other = (Edge) o;
             return Objects.equals(this.from, other.from) && Objects.equals(this.to, other.to);
         }
@@ -39,23 +40,22 @@ public abstract class Graph {
         }
     }
 
-
-    // ------------------------------ ATTRIBUTES ------------------------------ //
+    // -------------------------- ATTRIBUTES ----------------- //
 
     public final Set<Vertex> vertices = new HashSet<>();
     public final Map<String, Vertex> vertexMap = new HashMap<>();
     public final Set<Edge> edges = new HashSet<>();
     public final Map<Vertex, Set<Vertex>> adjacencyMap = new HashMap<>();
 
-
-    // ------------------------------ COMMON METHODS ------------------------------ //
+    // -------------------------- COMMON METHODS ------------- //
 
     public Vertex getVertexById(String id) {
-        return vertexMap.get(id);
+        return this.vertexMap.get(id);
     }
 
     public Vertex addVertex(String id) {
-        if (getVertexById(id) != null) return getVertexById(id);
+        if (getVertexById(id) != null)
+            return getVertexById(id);
         Vertex v = new Vertex(id);
         this.vertices.add(v);
         this.vertexMap.put(id, v);
@@ -64,14 +64,14 @@ public abstract class Graph {
     }
 
     public void addVertex(Vertex v) {
-        if (getVertexById(v.id) != null) return;
+        if (getVertexById(v.id) != null)
+            return;
         this.vertices.add(v);
         this.vertexMap.put(v.id, v);
         this.adjacencyMap.put(v, new HashSet<>());
     }
 
-
-    // ------------------------------ ABSTRACT METHODS ------------------------------ //
+    // -------------------------- ABSTRACT METHODS ----------- //
 
     public abstract void removeVertex(String id);
 
@@ -79,45 +79,47 @@ public abstract class Graph {
 
     public abstract void removeEdge(String from, String to);
 
-    // ------------------------------ AUXILIARY METHODS ------------------------------ //
+    // -------------------------- AUXILIARY METHODS ---------- //
 
     public int order() {
-        return vertices.size();
+        return this.vertices.size();
     }
 
     public int size() {
-        return edges.size();
+        return this.edges.size();
     }
 
     public int degreeOf(Vertex v) {
-        if (!vertices.contains(v)) throw new IllegalArgumentException();
+        if (!this.vertices.contains(v))
+            throw new IllegalArgumentException();
         return this.adjacencyMap.get(v).size();
     }
 
     public int minDegree() {
-        if (vertices.isEmpty()) return 0;
+        if (this.vertices.isEmpty())
+            return 0;
         int minimum = Integer.MAX_VALUE;
         for (Vertex v : this.vertices) {
-            minimum = Math.min(minimum, adjacencyMap.get(v).size());
+            minimum = Math.min(minimum, this.adjacencyMap.get(v).size());
         }
         return minimum;
     }
 
     public int maxDegree() {
-        if (vertices.isEmpty()) return 0;
+        if (this.vertices.isEmpty())
+            return 0;
         int maximum = Integer.MIN_VALUE;
         for (Vertex v : this.vertices) {
-            maximum = Math.max(maximum, adjacencyMap.get(v).size());
+            maximum = Math.max(maximum, this.adjacencyMap.get(v).size());
         }
         return maximum;
     }
 
-
-    // ------------------------------ COMMON ALGORITHMS ------------------------------ //
+    // -------------------------- COMMON ALGORITHMS ---------- //
 
     public int distanceBFS(Vertex from, Vertex to) {
         Set<Vertex> visited = new HashSet<>();
-        Queue<Vertex> queue = new LinkedList<>();
+        Deque<Vertex> queue = new ArrayDeque<>();
         queue.add(from);
         visited.add(from);
 
@@ -126,7 +128,8 @@ public abstract class Graph {
             int levelSize = queue.size();
             for (int i = 0; i < levelSize; i++) {
                 Vertex current = queue.poll();
-                if (current.equals(to)) return distance;
+                if (current.equals(to))
+                    return distance;
                 for (Vertex neighbor : this.adjacencyMap.get(current)) {
                     if (!visited.contains(neighbor)) {
                         visited.add(neighbor);
@@ -143,7 +146,7 @@ public abstract class Graph {
         Map<Vertex, Integer> distances = new HashMap<>();
         distances.put(from, 0);
 
-        Queue<Vertex> queue = new LinkedList<>();
+        Deque<Vertex> queue = new ArrayDeque<>();
         queue.add(from);
 
         while (!queue.isEmpty()) {
@@ -158,15 +161,11 @@ public abstract class Graph {
         return distances;
     }
 
-/*
-    public boolean isTree() {
-        return (this.vertices.size() - 1 == this.edges.size() && !this.hasCycles());
-    }
-*/
-    // ------------------------------ ABSTRACT ALGORITHMS ------------------------------ //
-
+    // -------------------------- ABSTRACT ALGORITHMS -------- //
 
     public abstract boolean hasCycles();
+
+    public abstract boolean isTree();
 
     public abstract Graph treeBFS(Vertex root);
 }

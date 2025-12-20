@@ -1,9 +1,21 @@
-package graphs;
+package utils;
+
+import graphs.*;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Scanner;
 
 public class Builders {
+    public static UndirectedGraph undirectedGraphBuilder(String filePath) {
+        try {
+            return undirectedGraphBuilder(new File(filePath));
+        } catch (FileNotFoundException e) {
+            System.err.println("File not found: " + filePath);
+            return new UndirectedGraph();
+        }
+    }
+
     public static UndirectedGraph undirectedGraphBuilder(File file) throws FileNotFoundException {
         UndirectedGraph graph = new UndirectedGraph();
 
@@ -25,7 +37,16 @@ public class Builders {
         return graph;
     }
 
-    public Digraph digraphBuilder(File file) throws FileNotFoundException {
+    public static Digraph digraphBuilder(String filePath) {
+        try {
+            return digraphBuilder(new File(filePath));
+        } catch (FileNotFoundException e) {
+            System.err.println("File not found: " + filePath);
+            return new Digraph();
+        }
+    }
+
+    public static Digraph digraphBuilder(File file) throws FileNotFoundException {
         Digraph graph = new Digraph();
 
         Scanner sc = new Scanner(file);
@@ -46,17 +67,18 @@ public class Builders {
         return graph;
     }
 
-/*
-    public MultiGraph multiGraphBuilder(File file) throws FileNotFoundException {
-        MultiGraph graph = new MultiGraph();
-
-        return graph;
-    }
-
-    public WeightedGraph weightedGraphBuilder(File file) throws FileNotFoundException {
-        WeightedGraph graph = new WeightedGraph();
-
-        return graph;
-    }
-*/
+    /*
+     * public MultiGraph multiGraphBuilder(File file) throws FileNotFoundException {
+     * MultiGraph graph = new MultiGraph();
+     * 
+     * return graph;
+     * }
+     * 
+     * public WeightedGraph weightedGraphBuilder(File file) throws
+     * FileNotFoundException {
+     * WeightedGraph graph = new WeightedGraph();
+     * 
+     * return graph;
+     * }
+     */
 }
