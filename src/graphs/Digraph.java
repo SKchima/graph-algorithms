@@ -107,6 +107,10 @@ public class Digraph extends Graph {
 
     // ----- STRUCTURES AND ORDERING ----- //
 
+    /**
+     * Algorithm: DFS cycle detection + degree constraints
+     * Complexity: O(V + E) time, O(V) space
+     */
     public boolean isTree() {
         if (this.vertices.isEmpty())
             return true;
@@ -130,6 +134,10 @@ public class Digraph extends Graph {
         return rootCount == 1;
     }
 
+    /**
+     * Algorithm: Depth-First Search (white-gray-black)
+     * Complexity: O(V + E) time, O(V) space
+     */
     public boolean hasCycles() {
         Set<Vertex> start = new HashSet<>();
         Set<Vertex> finish = new HashSet<>();
@@ -142,6 +150,10 @@ public class Digraph extends Graph {
         return false;
     }
 
+    /**
+     * Algorithm: Kahn's Algorithm (BFS-based)
+     * Complexity: Θ(V + E) time, O(V) space
+     */
     public List<Vertex> topologicalSort() {
         Map<Vertex, Integer> inDegree = new HashMap<>();
         for (Vertex v : this.vertices) {
@@ -178,6 +190,10 @@ public class Digraph extends Graph {
         return sort;
     }
 
+    /**
+     * Algorithm: Edge reversal
+     * Complexity: Θ(V + E) time, Θ(V + E) space
+     */
     public Digraph transposeCopy() {
         Digraph T = new Digraph();
         for (Edge e : this.edges) {
@@ -192,6 +208,10 @@ public class Digraph extends Graph {
 
     // ----- STRONG CONNECTIVITY ----- //
 
+    /**
+     * Algorithm: Kosaraju-Sharir (two-pass DFS)
+     * Complexity: Θ(V + E) time, O(V) space
+     */
     public Set<Set<Vertex>> stronglyConnectedComponentsKS() {
         Set<Vertex> visited = new HashSet<>();
         Deque<Vertex> stack = new ArrayDeque<>();
@@ -217,6 +237,10 @@ public class Digraph extends Graph {
         return components;
     }
 
+    /**
+     * Algorithm: Tarjan's Algorithm (single-pass DFS)
+     * Complexity: Θ(V + E) time, O(V) space
+     */
     public Set<Set<Vertex>> stronglyConnectedComponentsT() {
         Map<Vertex, Integer> index = new HashMap<>();
         Map<Vertex, Integer> lowlink = new HashMap<>();
@@ -234,6 +258,10 @@ public class Digraph extends Graph {
 
     // ----- EULERIAN TRAILS ----- //
 
+    /**
+     * Algorithm: Degree-based Eulerian condition
+     * Complexity: Θ(V) time, O(1) space
+     */
     public boolean hasEulerianTrail() {
         if (!isWeaklyConnectedExcludingIsolated())
             return false;
@@ -252,6 +280,10 @@ public class Digraph extends Graph {
         return (startNodes == 0 && endNodes == 0) || (startNodes == 1 && endNodes == 1);
     }
 
+    /**
+     * Algorithm: Degree-based Eulerian condition
+     * Complexity: Θ(V) time, O(1) space
+     */
     public boolean hasEulerianCircuit() {
         if (!isWeaklyConnectedExcludingIsolated())
             return false;
@@ -262,6 +294,10 @@ public class Digraph extends Graph {
         return true;
     }
 
+    /**
+     * Algorithm: Hierholzer's Algorithm
+     * Complexity: Θ(V + E) time, O(V + E) space
+     */
     public List<Edge> eulerianTrailHierholzer() {
         if (!hasEulerianTrail())
             return null;
@@ -302,6 +338,10 @@ public class Digraph extends Graph {
         return trail;
     }
 
+    /**
+     * Algorithm: Hierholzer's Algorithm
+     * Complexity: Θ(V + E) time, O(V + E) space
+     */
     public List<Edge> eulerianCircuitHierholzer() {
         if (!hasEulerianCircuit())
             return null;
@@ -343,19 +383,106 @@ public class Digraph extends Graph {
 
     // ----- BIPARTITION AND MATCHING ----- //
 
+    /**
+     * Algorithm: BFS 2-coloring on underlying undirected graph
+     * Complexity: O(V + E) time, O(V) space
+     */
     public boolean isDBipartite() {
-        // Algorithm: D-Bipartition Test
-        return false;
+        return getDPartition() != null;
     }
 
-    public Map<Vertex, Integer> getDPartitions() {
-        // Algorithm: Source-Sink Analysis
-        return null;
+    /**
+     * Algorithm: BFS 2-coloring on underlying undirected graph
+     * Complexity: O(V + E) time, O(V) space
+     */
+    public List<Set<Vertex>> getDPartition() {
+        List<Set<Vertex>> answer = new ArrayList<>();
+        answer.add(new HashSet<>());
+        answer.add(new HashSet<>());
+
+        Map<Vertex, Integer> colors = new HashMap<>();
+
+        Map<Vertex, List<Vertex>> undirectedAdj = new HashMap<>();
+        for (Vertex v : this.vertices)
+            undirectedAdj.put(v, new ArrayList<>());
+        for (Edge e : this.edges) {
+            undirectedAdj.get(e.from).add(e.to);
+            undirectedAdj.get(e.to).add(e.from);
+        }
+
+        for (Vertex v : this.vertices) {
+            if (colors.containsKey(v))
+                continue;
+
+            colors.put(v, 0);
+            answer.get(0).add(v);
+            Deque<Vertex> queue = new ArrayDeque<>();
+            queue.add(v);
+
+            while (!queue.isEmpty()) {
+                Vertex current = queue.poll();
+                int color = colors.get(current);
+                int nextColor = 1 - color;
+
+                for (Vertex neighbor : undirectedAdj.get(current)) {
+                    if (colors.containsKey(neighbor)) {
+                        if (colors.get(neighbor) == color)
+                            return null;
+                    } else {
+                        colors.put(neighbor, nextColor);
+                        answer.get(nextColor).add(neighbor);
+                        queue.add(neighbor);
+                    }
+                }
+            }
+        }
+        return answer;
     }
 
-    public Set<Edge> maxMatching() {
-        // Algorithm: Max Flow using Edmonds-Karp
-        return null;
+    /**
+     * Algorithm: Set intersection check (source-sink exclusivity)
+     * Complexity: Θ(E) time, O(V) space
+     */
+    public boolean isSourceSinkBipartite() {
+        Set<Vertex> X = new HashSet<>();
+        Set<Vertex> Y = new HashSet<>();
+
+        for (Edge e : this.edges) {
+            X.add(e.from);
+            Y.add(e.to);
+        }
+
+        for (Vertex v : X)
+            if (Y.contains(v))
+                return false;
+        return true;
+    }
+
+    /**
+     * Algorithm: Source-sink partition by edge endpoints
+     * Complexity: Θ(V + E) time, O(V) space
+     */
+    public List<Set<Vertex>> getSourceSinkPartition() {
+        if (!isSourceSinkBipartite())
+            return null;
+
+        List<Set<Vertex>> answer = new ArrayList<>();
+        Set<Vertex> X = new HashSet<>();
+        Set<Vertex> Y = new HashSet<>();
+
+        for (Edge e : this.edges) {
+            X.add(e.from);
+            Y.add(e.to);
+        }
+
+        for (Vertex v : this.vertices) {
+            if (!X.contains(v) && !Y.contains(v))
+                X.add(v);
+        }
+
+        answer.add(X);
+        answer.add(Y);
+        return answer;
     }
 
     // -------------------------- HELPERS -------------------- //

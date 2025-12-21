@@ -42,10 +42,18 @@ public abstract class Graph {
 
     // -------------------------- ATTRIBUTES ----------------- //
 
-    public final Set<Vertex> vertices = new HashSet<>();
-    public final Map<String, Vertex> vertexMap = new HashMap<>();
-    public final Set<Edge> edges = new HashSet<>();
-    public final Map<Vertex, Set<Vertex>> adjacencyMap = new HashMap<>();
+    protected final Set<Vertex> vertices = new HashSet<>();
+    protected final Map<String, Vertex> vertexMap = new HashMap<>();
+    protected final Set<Edge> edges = new HashSet<>();
+    protected final Map<Vertex, Set<Vertex>> adjacencyMap = new HashMap<>();
+
+    public Set<Vertex> getVertices() {
+        return Collections.unmodifiableSet(this.vertices);
+    }
+
+    public Set<Edge> getEdges() {
+        return Collections.unmodifiableSet(this.edges);
+    }
 
     // -------------------------- COMMON METHODS ------------- //
 
@@ -117,6 +125,10 @@ public abstract class Graph {
 
     // -------------------------- COMMON ALGORITHMS ---------- //
 
+    /**
+     * Algorithm: Breadth-First Search
+     * Complexity: O(V + E) time, O(V) space
+     */
     public int distanceBFS(Vertex from, Vertex to) {
         Set<Vertex> visited = new HashSet<>();
         Deque<Vertex> queue = new ArrayDeque<>();
@@ -142,6 +154,10 @@ public abstract class Graph {
         return -1;
     }
 
+    /**
+     * Algorithm: Breadth-First Search
+     * Complexity: Θ(V + E) time, O(V) space
+     */
     public Map<Vertex, Integer> distancesBFS(Vertex from) {
         Map<Vertex, Integer> distances = new HashMap<>();
         distances.put(from, 0);

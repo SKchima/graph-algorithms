@@ -1,6 +1,9 @@
 .idea/
 *.iml
 *.iws
-out/
+
+# Ignore all files in out/ except .gitkeep
+out/*
+!out/.gitkeep
 
 *.class
