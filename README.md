@@ -131,6 +131,9 @@ Graph files in `inputs/test/` use a simple edge-list format compatible with [CS 
 
 ## 📚 Implemented Algorithms
 
+> [!NOTE]
+> All algorithms currently implemented in this library are **deterministic** and run in **polynomial time** relative to the number of vertices ($V$) and edges ($E$).
+
 ### Graph (Base Class)
 | Algorithm | Complexity | Description |
 |-----------|------------|-------------|
@@ -214,11 +217,3 @@ Graph files in `inputs/test/` use a simple edge-list format compatible with [CS 
 - Clean implementations without verbose comments
 - Complexity documentation via Javadoc only
 - Immutable external interfaces, mutable internal for performance
-
-## 📄 License
-
-This is a personal educational project. Feel free to use for learning purposes.
-
----
-
-**Built with focus on**: Clean code, algorithmic correctness, and comprehensive testing.
