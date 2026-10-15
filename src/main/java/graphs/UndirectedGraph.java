@@ -2,10 +2,10 @@ package graphs;
 
 import java.util.*;
 
-public class UndirectedGraph extends Graph {
+public class UndirectedGraph<V> extends Graph<V> {
 
-    public static class Edge extends Graph.Edge {
-        public Edge(Vertex from, Vertex to) {
+    public static class Edge<V> extends Graph.Edge<V> {
+        public Edge(Vertex<V> from, Vertex<V> to) {
             super(from, to);
         }
 
@@ -13,7 +13,7 @@ public class UndirectedGraph extends Graph {
         public boolean equals(Object o) {
             if (o == null || this.getClass() != o.getClass())
                 return false;
-            Edge other = (Edge) o;
+            Edge<V> other = (Edge<V>) o;
 
             return (Objects.equals(this.from, other.from) && Objects.equals(this.to, other.to))
                     || (Objects.equals(this.from, other.to) && Objects.equals(this.to, other.from));
@@ -29,28 +29,28 @@ public class UndirectedGraph extends Graph {
         super();
     }
 
-    public UndirectedGraph(UndirectedGraph other) {
-        for (Vertex v : other.vertices) {
+    public UndirectedGraph(UndirectedGraph<V> other) {
+        for (Vertex<V> v : other.vertices) {
             this.addVertex(v.id());
         }
-        for (Graph.Edge e : other.edges) {
+        for (Graph.Edge<V> e : other.edges) {
             this.addEdge(this.getVertexById(e.from.id()), this.getVertexById(e.to.id()));
         }
     }
 
-    public UndirectedGraph copy() {
-        return new UndirectedGraph(this);
+    public UndirectedGraph<V> copy() {
+        return new UndirectedGraph<>(this);
     }
 
     // -------------------------- INHERITED METHODS ---------- //
 
     @Override
-    public void removeVertex(String id) {
-        Vertex v = getVertexById(id);
+    public void removeVertex(V id) {
+        Vertex<V> v = getVertexById(id);
         if (v == null)
             return;
 
-        for (Vertex neighbor : this.adjacencyMap.get(v)) {
+        for (Vertex<V> neighbor : this.adjacencyMap.get(v)) {
             this.adjacencyMap.get(neighbor).remove(v);
         }
         this.vertices.remove(v);
@@ -59,10 +59,10 @@ public class UndirectedGraph extends Graph {
     }
 
     @Override
-    public void addEdge(Vertex from, Vertex to) {
+    public void addEdge(Vertex<V> from, Vertex<V> to) {
         this.addVertex(from);
         this.addVertex(to);
-        Edge edge = new Edge(from, to);
+        Edge<V> edge = new Edge<>(from, to);
         if (!this.edges.add(edge))
             return;
         this.adjacencyMap.get(from).add(to);
@@ -70,28 +70,28 @@ public class UndirectedGraph extends Graph {
     }
 
     @Override
-    public void removeEdge(String from, String to) {
-        Vertex vFrom = getVertexById(from);
-        Vertex vTo = getVertexById(to);
-        if (vFrom != null && vTo != null && this.edges.remove(new Edge(vFrom, vTo))) {
+    public void removeEdge(V from, V to) {
+        Vertex<V> vFrom = getVertexById(from);
+        Vertex<V> vTo = getVertexById(to);
+        if (vFrom != null && vTo != null && this.edges.remove(new Edge<>(vFrom, vTo))) {
             this.adjacencyMap.get(vFrom).remove(vTo);
             this.adjacencyMap.get(vTo).remove(vFrom);
         }
     }
 
     @Override
-    public UndirectedGraph treeBFS(Vertex root) {
-        UndirectedGraph tree = new UndirectedGraph();
-        Set<Vertex> visited = new HashSet<>();
-        Deque<Vertex> queue = new ArrayDeque<>();
+    public UndirectedGraph<V> treeBFS(Vertex<V> root) {
+        UndirectedGraph<V> tree = new UndirectedGraph<>();
+        Set<Vertex<V>> visited = new HashSet<>();
+        Deque<Vertex<V>> queue = new ArrayDeque<>();
 
         queue.add(root);
         visited.add(root);
 
         while (!queue.isEmpty()) {
-            Vertex current = queue.poll();
+            Vertex<V> current = queue.poll();
             tree.addVertex(current);
-            for (Vertex neighbor : this.adjacencyMap.get(current)) {
+            for (Vertex<V> neighbor : this.adjacencyMap.get(current)) {
                 if (!visited.contains(neighbor)) {
                     tree.addEdge(current, neighbor);
                     visited.add(neighbor);
@@ -122,8 +122,8 @@ public class UndirectedGraph extends Graph {
      * Complexity: O(V + E) time, O(V) space
      */
     public boolean hasCycles() {
-        Set<Vertex> visited = new HashSet<>();
-        for (Vertex v : this.vertices) {
+        Set<Vertex<V>> visited = new HashSet<>();
+        for (Vertex<V> v : this.vertices) {
             if (!visited.contains(v)) {
                 if (hasCyclesDFS(visited, v, null))
                     return true;
@@ -138,14 +138,14 @@ public class UndirectedGraph extends Graph {
      * Algorithm: Tarjan's Bridge-Finding Algorithm
      * Complexity: Θ(V + E) time, O(V) space
      */
-    public Set<Edge> bridges() {
-        Set<Vertex> visited = new HashSet<>();
-        Map<Vertex, Integer> discovery = new HashMap<>();
-        Map<Vertex, Integer> lowpoint = new HashMap<>();
-        Set<Edge> answer = new HashSet<>();
+    public Set<Edge<V>> bridges() {
+        Set<Vertex<V>> visited = new HashSet<>();
+        Map<Vertex<V>, Integer> discovery = new HashMap<>();
+        Map<Vertex<V>, Integer> lowpoint = new HashMap<>();
+        Set<Edge<V>> answer = new HashSet<>();
         int[] counter = { 0 };
 
-        for (Vertex v : this.vertices)
+        for (Vertex<V> v : this.vertices)
             if (!visited.contains(v))
                 bridgesDFS(visited, v, null, discovery, lowpoint, counter, answer);
         return answer;
@@ -155,14 +155,14 @@ public class UndirectedGraph extends Graph {
      * Algorithm: Tarjan's Articulation Points Algorithm
      * Complexity: Θ(V + E) time, O(V) space
      */
-    public Set<Vertex> articulationPoints() {
-        Set<Vertex> visited = new HashSet<>();
-        Map<Vertex, Integer> discovery = new HashMap<>();
-        Map<Vertex, Integer> lowpoint = new HashMap<>();
-        Set<Vertex> answer = new HashSet<>();
+    public Set<Vertex<V>> articulationPoints() {
+        Set<Vertex<V>> visited = new HashSet<>();
+        Map<Vertex<V>, Integer> discovery = new HashMap<>();
+        Map<Vertex<V>, Integer> lowpoint = new HashMap<>();
+        Set<Vertex<V>> answer = new HashSet<>();
         int[] counter = { 0 };
 
-        for (Vertex v : this.vertices)
+        for (Vertex<V> v : this.vertices)
             if (!visited.contains(v))
                 articulationPointsDFS(visited, v, null, discovery, lowpoint, counter, answer);
         return answer;
@@ -176,8 +176,8 @@ public class UndirectedGraph extends Graph {
         if (this.vertices.isEmpty())
             return true;
 
-        Set<Vertex> visited = new HashSet<>();
-        Vertex start = this.vertices.iterator().next();
+        Set<Vertex<V>> visited = new HashSet<>();
+        Vertex<V> start = this.vertices.iterator().next();
         isConnectedDFS(start, visited);
 
         return visited.size() == this.vertices.size();
@@ -187,13 +187,13 @@ public class UndirectedGraph extends Graph {
      * Algorithm: Depth-First Search
      * Complexity: Θ(V + E) time, O(V) space
      */
-    public Set<Set<Vertex>> components() {
-        Set<Vertex> visited = new HashSet<>();
-        Set<Set<Vertex>> answer = new HashSet<>();
+    public Set<Set<Vertex<V>>> components() {
+        Set<Vertex<V>> visited = new HashSet<>();
+        Set<Set<Vertex<V>>> answer = new HashSet<>();
 
-        for (Vertex v : this.vertices) {
+        for (Vertex<V> v : this.vertices) {
             if (!visited.contains(v)) {
-                Set<Vertex> component = new HashSet<>();
+                Set<Vertex<V>> component = new HashSet<>();
                 componentsDFS(v, visited, component);
                 answer.add(component);
             }
@@ -223,15 +223,15 @@ public class UndirectedGraph extends Graph {
      * Algorithm: Tarjan's Biconnected Components (articulation-based)
      * Complexity: Θ(V + E) time, O(V + E) space
      */
-    public Set<Set<Edge>> biComponentsByArticulation() {
-        Set<Vertex> visited = new HashSet<>();
-        Map<Vertex, Integer> discovery = new HashMap<>();
-        Map<Vertex, Integer> lowpoint = new HashMap<>();
-        Set<Set<Edge>> answer = new HashSet<>();
-        Deque<Edge> stack = new ArrayDeque<>();
+    public Set<Set<Edge<V>>> biComponentsByArticulation() {
+        Set<Vertex<V>> visited = new HashSet<>();
+        Map<Vertex<V>, Integer> discovery = new HashMap<>();
+        Map<Vertex<V>, Integer> lowpoint = new HashMap<>();
+        Set<Set<Edge<V>>> answer = new HashSet<>();
+        Deque<Edge<V>> stack = new ArrayDeque<>();
         int[] counter = { 0 };
 
-        for (Vertex v : this.vertices)
+        for (Vertex<V> v : this.vertices)
             if (!visited.contains(v))
                 biconnectedComponentsDFS(visited, v, null, discovery, lowpoint, counter, stack, answer);
         return answer;
@@ -241,14 +241,14 @@ public class UndirectedGraph extends Graph {
      * Algorithm: Bridge-based component decomposition
      * Complexity: Θ(V + E) time, O(V + E) space
      */
-    public Set<Set<Vertex>> biComponentsByBridges() {
-        Set<Vertex> visited = new HashSet<>();
-        Set<Set<Vertex>> answer = new HashSet<>();
-        Set<Edge> bridges = bridges();
+    public Set<Set<Vertex<V>>> biComponentsByBridges() {
+        Set<Vertex<V>> visited = new HashSet<>();
+        Set<Set<Vertex<V>>> answer = new HashSet<>();
+        Set<Edge<V>> bridges = bridges();
 
-        for (Vertex v : this.vertices) {
+        for (Vertex<V> v : this.vertices) {
             if (!visited.contains(v)) {
-                Set<Vertex> component = new HashSet<>();
+                Set<Vertex<V>> component = new HashSet<>();
                 markComponentDFS(v, visited, component, bridges);
                 answer.add(component);
             }
@@ -266,7 +266,7 @@ public class UndirectedGraph extends Graph {
         if (!isConnectedExcludingIsolated())
             return false;
         int oddDegreeVertices = 0;
-        for (Vertex v : this.vertices) {
+        for (Vertex<V> v : this.vertices) {
             if (degreeOf(v) % 2 != 0)
                 oddDegreeVertices++;
         }
@@ -280,7 +280,7 @@ public class UndirectedGraph extends Graph {
     public boolean hasEulerianCircuit() {
         if (!isConnectedExcludingIsolated())
             return false;
-        for (Vertex v : this.vertices) {
+        for (Vertex<V> v : this.vertices) {
             if (degreeOf(v) % 2 != 0)
                 return false;
         }
@@ -291,22 +291,22 @@ public class UndirectedGraph extends Graph {
      * Algorithm: Fleury's Algorithm
      * Complexity: O(E²) time, O(V + E) space
      */
-    public List<Edge> eulerianTrailFleury() {
+    public List<Edge<V>> eulerianTrailFleury() {
         if (!hasEulerianTrail())
             return null;
 
-        List<Edge> answer = new ArrayList<>();
-        UndirectedGraph copy = this.copy();
+        List<Edge<V>> answer = new ArrayList<>();
+        UndirectedGraph<V> copy = this.copy();
 
-        Vertex start = null;
-        for (Vertex v : copy.vertices) {
+        Vertex<V> start = null;
+        for (Vertex<V> v : copy.vertices) {
             if (copy.degreeOf(v) % 2 != 0) {
                 start = v;
                 break;
             }
         }
         if (start == null) {
-            for (Vertex v : copy.vertices) {
+            for (Vertex<V> v : copy.vertices) {
                 if (copy.degreeOf(v) > 0) {
                     start = v;
                     break;
@@ -317,17 +317,17 @@ public class UndirectedGraph extends Graph {
         if (start == null)
             return answer;
 
-        Vertex current = start;
+        Vertex<V> current = start;
         while (copy.size() > 0) {
-            Vertex next = null;
+            Vertex<V> next = null;
 
-            for (Vertex candidate : copy.adjacencyMap.get(current)) {
+            for (Vertex<V> candidate : copy.adjacencyMap.get(current)) {
                 if (copy.isValidEdgeFleury(current, candidate)) {
                     next = candidate;
                     break;
                 }
             }
-            answer.add(new Edge(current, next));
+            answer.add(new Edge<>(current, next));
             copy.removeEdge(current.id(), next.id());
             current = next;
         }
@@ -338,15 +338,15 @@ public class UndirectedGraph extends Graph {
      * Algorithm: Fleury's Algorithm
      * Complexity: O(E²) time, O(V + E) space
      */
-    public List<Edge> eulerianCircuitFleury() {
+    public List<Edge<V>> eulerianCircuitFleury() {
         if (!hasEulerianCircuit())
             return null;
 
-        List<Edge> answer = new ArrayList<>();
-        UndirectedGraph copy = this.copy();
+        List<Edge<V>> answer = new ArrayList<>();
+        UndirectedGraph<V> copy = this.copy();
 
-        Vertex start = null;
-        for (Vertex v : copy.vertices) {
+        Vertex<V> start = null;
+        for (Vertex<V> v : copy.vertices) {
             if (copy.degreeOf(v) > 0) {
                 start = v;
                 break;
@@ -356,17 +356,17 @@ public class UndirectedGraph extends Graph {
         if (start == null)
             return answer;
 
-        Vertex current = start;
+        Vertex<V> current = start;
         while (copy.size() > 0) {
-            Vertex next = null;
+            Vertex<V> next = null;
 
-            for (Vertex candidate : copy.adjacencyMap.get(current)) {
+            for (Vertex<V> candidate : copy.adjacencyMap.get(current)) {
                 if (copy.isValidEdgeFleury(current, candidate)) {
                     next = candidate;
                     break;
                 }
             }
-            answer.add(new Edge(current, next));
+            answer.add(new Edge<>(current, next));
             copy.removeEdge(current.id(), next.id());
             current = next;
         }
@@ -377,19 +377,19 @@ public class UndirectedGraph extends Graph {
      * Algorithm: Hierholzer's Algorithm
      * Complexity: Θ(V + E) time, O(V + E) space
      */
-    public List<Edge> eulerianTrailHierholzer() {
+    public List<Edge<V>> eulerianTrailHierholzer() {
         if (!hasEulerianTrail())
             return null;
 
         if (this.hasEulerianCircuit())
             return eulerianCircuitHierholzer();
 
-        List<Edge> answer = new ArrayList<>();
-        UndirectedGraph copy = this.copy();
+        List<Edge<V>> answer = new ArrayList<>();
+        UndirectedGraph<V> copy = this.copy();
 
-        Vertex start = null;
-        Vertex end = null;
-        for (Vertex v : copy.vertices) {
+        Vertex<V> start = null;
+        Vertex<V> end = null;
+        for (Vertex<V> v : copy.vertices) {
             if (copy.degreeOf(v) % 2 != 0) {
                 if (start == null)
                     start = v;
@@ -403,19 +403,19 @@ public class UndirectedGraph extends Graph {
 
         copy.addEdge(end, start);
 
-        Deque<Edge> stack = new ArrayDeque<>();
-        Vertex current = start;
+        Deque<Edge<V>> stack = new ArrayDeque<>();
+        Vertex<V> current = start;
 
         while (!stack.isEmpty() || copy.degreeOf(current) > 0) {
             if (copy.degreeOf(current) > 0) {
-                Vertex next = copy.adjacencyMap.get(current).iterator().next();
-                Edge e = new Edge(current, next);
+                Vertex<V> next = copy.adjacencyMap.get(current).iterator().next();
+                Edge<V> e = new Edge<>(current, next);
 
                 stack.push(e);
                 copy.removeEdge(current.id(), next.id());
                 current = next;
             } else {
-                Edge e = stack.pop();
+                Edge<V> e = stack.pop();
                 answer.add(e);
                 current = e.from.equals(current) ? e.to : e.from;
             }
@@ -424,10 +424,10 @@ public class UndirectedGraph extends Graph {
         Collections.reverse(answer);
 
         for (int i = 0; i < answer.size(); i++) {
-            Edge e = answer.get(i);
+            Edge<V> e = answer.get(i);
             if ((e.from.equals(end) && e.to.equals(start)) ||
                     (e.from.equals(start) && e.to.equals(end))) {
-                List<Edge> trail = new ArrayList<>();
+                List<Edge<V>> trail = new ArrayList<>();
                 for (int j = i + 1; j < answer.size(); j++) {
                     trail.add(answer.get(j));
                 }
@@ -445,15 +445,15 @@ public class UndirectedGraph extends Graph {
      * Algorithm: Hierholzer's Algorithm
      * Complexity: Θ(V + E) time, O(V + E) space
      */
-    public List<Edge> eulerianCircuitHierholzer() {
+    public List<Edge<V>> eulerianCircuitHierholzer() {
         if (!hasEulerianCircuit())
             return null;
 
-        List<Edge> answer = new ArrayList<>();
-        UndirectedGraph copy = this.copy();
+        List<Edge<V>> answer = new ArrayList<>();
+        UndirectedGraph<V> copy = this.copy();
 
-        Vertex start = null;
-        for (Vertex v : copy.vertices) {
+        Vertex<V> start = null;
+        for (Vertex<V> v : copy.vertices) {
             if (copy.degreeOf(v) > 0) {
                 start = v;
                 break;
@@ -463,20 +463,20 @@ public class UndirectedGraph extends Graph {
         if (start == null)
             return answer;
 
-        Deque<Edge> stack = new ArrayDeque<>();
-        Vertex current = start;
+        Deque<Edge<V>> stack = new ArrayDeque<>();
+        Vertex<V> current = start;
 
         while (!stack.isEmpty() || copy.degreeOf(current) > 0) {
 
             if (copy.degreeOf(current) > 0) {
-                Vertex next = copy.adjacencyMap.get(current).iterator().next();
-                Edge e = new Edge(current, next);
+                Vertex<V> next = copy.adjacencyMap.get(current).iterator().next();
+                Edge<V> e = new Edge<>(current, next);
 
                 stack.push(e);
                 copy.removeEdge(current.id(), next.id());
                 current = next;
             } else {
-                Edge e = stack.pop();
+                Edge<V> e = stack.pop();
                 answer.add(e);
                 current = e.from.equals(current) ? e.to : e.from;
             }
@@ -493,21 +493,21 @@ public class UndirectedGraph extends Graph {
      * Complexity: O(V + E) time, O(V) space
      */
     public boolean isBipartite() {
-        Map<Vertex, Integer> colors = new HashMap<>();
+        Map<Vertex<V>, Integer> colors = new HashMap<>();
 
-        for (Vertex v : this.vertices) {
+        for (Vertex<V> v : this.vertices) {
             if (colors.containsKey(v))
                 continue;
 
             colors.put(v, 0);
-            Deque<Vertex> queue = new ArrayDeque<>();
+            Deque<Vertex<V>> queue = new ArrayDeque<>();
             queue.add(v);
 
             while (!queue.isEmpty()) {
-                Vertex current = queue.pop();
+                Vertex<V> current = queue.pop();
                 int color = colors.get(current);
 
-                for (Vertex neighbor : this.adjacencyMap.get(current)) {
+                for (Vertex<V> neighbor : this.adjacencyMap.get(current)) {
                     if (colors.containsKey(neighbor)) {
                         if (colors.get(neighbor) == color)
                             return false;
@@ -526,27 +526,27 @@ public class UndirectedGraph extends Graph {
      * Algorithm: BFS-based 2-coloring
      * Complexity: O(V + E) time, O(V) space
      */
-    public List<Set<Vertex>> getBipartition() {
-        List<Set<Vertex>> answer = new ArrayList<>();
+    public List<Set<Vertex<V>>> getBipartition() {
+        List<Set<Vertex<V>>> answer = new ArrayList<>();
         answer.add(new HashSet<>());
         answer.add(new HashSet<>());
 
-        Map<Vertex, Integer> colors = new HashMap<>();
+        Map<Vertex<V>, Integer> colors = new HashMap<>();
 
-        for (Vertex v : this.vertices) {
+        for (Vertex<V> v : this.vertices) {
             if (colors.containsKey(v))
                 continue;
 
             colors.put(v, 0);
             answer.get(0).add(v);
-            Deque<Vertex> queue = new ArrayDeque<>();
+            Deque<Vertex<V>> queue = new ArrayDeque<>();
             queue.add(v);
 
             while (!queue.isEmpty()) {
-                Vertex current = queue.poll();
+                Vertex<V> current = queue.poll();
                 int color = colors.get(current);
 
-                for (Vertex neighbor : this.adjacencyMap.get(current)) {
+                for (Vertex<V> neighbor : this.adjacencyMap.get(current)) {
                     if (colors.containsKey(neighbor)) {
                         if (colors.get(neighbor) == color)
                             return null;
@@ -567,28 +567,28 @@ public class UndirectedGraph extends Graph {
      * Algorithm: Hopcroft-Karp
      * Complexity: O(E√V) time, O(V) space
      */
-    public Set<Edge> maxMatching() {
-        List<Set<Vertex>> partitions = getBipartition();
+    public Set<Edge<V>> maxMatching() {
+        List<Set<Vertex<V>>> partitions = getBipartition();
         if (partitions == null)
             return null;
 
-        Set<Vertex> X = partitions.get(0);
-        Set<Vertex> Y = partitions.get(1);
+        Set<Vertex<V>> X = partitions.get(0);
+        Set<Vertex<V>> Y = partitions.get(1);
 
-        Map<Vertex, Vertex> matching = new HashMap<>();
-        Map<Vertex, Integer> distances = new HashMap<>();
+        Map<Vertex<V>, Vertex<V>> matching = new HashMap<>();
+        Map<Vertex<V>, Integer> distances = new HashMap<>();
         int distToFreeY;
 
         while ((distToFreeY = maxMatchingBFS(matching, X, Y, distances)) != Integer.MAX_VALUE) {
-            for (Vertex x : X)
+            for (Vertex<V> x : X)
                 if (!matching.containsKey(x))
                     maxMatchingDFS(x, matching, distances, distToFreeY);
         }
 
-        Set<Edge> answer = new HashSet<>();
-        for (Vertex x : X)
+        Set<Edge<V>> answer = new HashSet<>();
+        for (Vertex<V> x : X)
             if (matching.containsKey(x))
-                answer.add(new Edge(x, matching.get(x)));
+                answer.add(new Edge<>(x, matching.get(x)));
         return answer;
     }
 
@@ -596,25 +596,25 @@ public class UndirectedGraph extends Graph {
      * Algorithm: König's Theorem (matching-based vertex cover)
      * Complexity: O(E√V) time, O(V) space
      */
-    public Set<Vertex> minVertexCover() {
-        Set<Edge> matchingEdges = maxMatching();
+    public Set<Vertex<V>> minVertexCover() {
+        Set<Edge<V>> matchingEdges = maxMatching();
         if (matchingEdges == null)
             return null;
 
-        List<Set<Vertex>> partitions = getBipartition();
-        Set<Vertex> X = partitions.get(0);
-        Set<Vertex> Y = partitions.get(1);
+        List<Set<Vertex<V>>> partitions = getBipartition();
+        Set<Vertex<V>> X = partitions.get(0);
+        Set<Vertex<V>> Y = partitions.get(1);
 
-        Map<Vertex, Vertex> matchMap = new HashMap<>();
-        for (Edge e : matchingEdges) {
+        Map<Vertex<V>, Vertex<V>> matchMap = new HashMap<>();
+        for (Edge<V> e : matchingEdges) {
             matchMap.put(e.from, e.to);
             matchMap.put(e.to, e.from);
         }
 
-        Set<Vertex> marked = new HashSet<>();
-        Deque<Vertex> queue = new ArrayDeque<>();
+        Set<Vertex<V>> marked = new HashSet<>();
+        Deque<Vertex<V>> queue = new ArrayDeque<>();
 
-        for (Vertex x : X) {
+        for (Vertex<V> x : X) {
             if (!matchMap.containsKey(x)) {
                 marked.add(x);
                 queue.add(x);
@@ -622,9 +622,9 @@ public class UndirectedGraph extends Graph {
         }
 
         while (!queue.isEmpty()) {
-            Vertex u = queue.poll();
+            Vertex<V> u = queue.poll();
             if (X.contains(u)) {
-                for (Vertex v : this.adjacencyMap.get(u)) {
+                for (Vertex<V> v : this.adjacencyMap.get(u)) {
                     if (matchMap.get(u) != v && !marked.contains(v)) {
                         marked.add(v);
                         queue.add(v);
@@ -632,7 +632,7 @@ public class UndirectedGraph extends Graph {
                 }
             } else {
                 if (matchMap.containsKey(u)) {
-                    Vertex v = matchMap.get(u);
+                    Vertex<V> v = matchMap.get(u);
                     if (!marked.contains(v)) {
                         marked.add(v);
                         queue.add(v);
@@ -641,11 +641,11 @@ public class UndirectedGraph extends Graph {
             }
         }
 
-        Set<Vertex> answer = new HashSet<>();
-        for (Vertex x : X)
+        Set<Vertex<V>> answer = new HashSet<>();
+        for (Vertex<V> x : X)
             if (!marked.contains(x))
                 answer.add(x);
-        for (Vertex y : Y)
+        for (Vertex<V> y : Y)
             if (marked.contains(y))
                 answer.add(y);
         return answer;
@@ -655,21 +655,21 @@ public class UndirectedGraph extends Graph {
      * Algorithm: Gallai's Identity (complement of min vertex cover)
      * Complexity: O(E√V) time, O(V) space
      */
-    public Set<Vertex> maxIndependentSet() {
-        Set<Vertex> cover = minVertexCover();
+    public Set<Vertex<V>> maxIndependentSet() {
+        Set<Vertex<V>> cover = minVertexCover();
         if (cover == null)
             return null;
 
-        Set<Vertex> answer = new HashSet<>(this.vertices);
+        Set<Vertex<V>> answer = new HashSet<>(this.vertices);
         answer.removeAll(cover);
         return answer;
     }
 
     // -------------------------- HELPERS -------------------- //
 
-    private boolean hasCyclesDFS(Set<Vertex> visited, Vertex current, Vertex previous) {
+    private boolean hasCyclesDFS(Set<Vertex<V>> visited, Vertex<V> current, Vertex<V> previous) {
         visited.add(current);
-        for (Vertex v : this.adjacencyMap.get(current)) {
+        for (Vertex<V> v : this.adjacencyMap.get(current)) {
             if (v.equals(previous))
                 continue;
             if (visited.contains(v))
@@ -680,14 +680,14 @@ public class UndirectedGraph extends Graph {
         return false;
     }
 
-    private void bridgesDFS(Set<Vertex> visited, Vertex current, Vertex previous, Map<Vertex, Integer> discovery,
-            Map<Vertex, Integer> lowpoint, int[] counter, Set<Edge> answer) {
+    private void bridgesDFS(Set<Vertex<V>> visited, Vertex<V> current, Vertex<V> previous, Map<Vertex<V>, Integer> discovery,
+            Map<Vertex<V>, Integer> lowpoint, int[] counter, Set<Edge<V>> answer) {
         visited.add(current);
         discovery.put(current, counter[0]);
         lowpoint.put(current, counter[0]);
         counter[0]++;
 
-        for (Vertex v : this.adjacencyMap.get(current)) {
+        for (Vertex<V> v : this.adjacencyMap.get(current)) {
             if (v.equals(previous))
                 continue;
 
@@ -696,22 +696,22 @@ public class UndirectedGraph extends Graph {
                 lowpoint.put(current, Math.min(lowpoint.get(current), lowpoint.get(v)));
 
                 if (discovery.get(current) < lowpoint.get(v))
-                    answer.add(new Edge(current, v));
+                    answer.add(new Edge<>(current, v));
 
             } else
                 lowpoint.put(current, Math.min(lowpoint.get(current), discovery.get(v)));
         }
     }
 
-    private void articulationPointsDFS(Set<Vertex> visited, Vertex current, Vertex previous,
-            Map<Vertex, Integer> discovery, Map<Vertex, Integer> lowpoint, int[] counter, Set<Vertex> answer) {
+    private void articulationPointsDFS(Set<Vertex<V>> visited, Vertex<V> current, Vertex<V> previous,
+            Map<Vertex<V>, Integer> discovery, Map<Vertex<V>, Integer> lowpoint, int[] counter, Set<Vertex<V>> answer) {
         visited.add(current);
         discovery.put(current, counter[0]);
         lowpoint.put(current, counter[0]);
         counter[0]++;
 
         int children = 0;
-        for (Vertex v : this.adjacencyMap.get(current)) {
+        for (Vertex<V> v : this.adjacencyMap.get(current)) {
             if (v.equals(previous))
                 continue;
 
@@ -731,46 +731,46 @@ public class UndirectedGraph extends Graph {
         }
     }
 
-    private void isConnectedDFS(Vertex current, Set<Vertex> visited) {
+    private void isConnectedDFS(Vertex<V> current, Set<Vertex<V>> visited) {
         visited.add(current);
 
-        for (Vertex v : this.adjacencyMap.get(current))
+        for (Vertex<V> v : this.adjacencyMap.get(current))
             if (!visited.contains(v))
                 isConnectedDFS(v, visited);
     }
 
-    private void componentsDFS(Vertex current, Set<Vertex> visited, Set<Vertex> component) {
+    private void componentsDFS(Vertex<V> current, Set<Vertex<V>> visited, Set<Vertex<V>> component) {
         visited.add(current);
         component.add(current);
 
-        for (Vertex v : this.adjacencyMap.get(current)) {
+        for (Vertex<V> v : this.adjacencyMap.get(current)) {
             if (!visited.contains(v))
                 componentsDFS(v, visited, component);
         }
     }
 
-    private void biconnectedComponentsDFS(Set<Vertex> visited, Vertex current, Vertex previous,
-            Map<Vertex, Integer> discovery, Map<Vertex, Integer> lowpoint, int[] counter, Deque<Edge> stack,
-            Set<Set<Edge>> answer) {
+    private void biconnectedComponentsDFS(Set<Vertex<V>> visited, Vertex<V> current, Vertex<V> previous,
+            Map<Vertex<V>, Integer> discovery, Map<Vertex<V>, Integer> lowpoint, int[] counter, Deque<Edge<V>> stack,
+            Set<Set<Edge<V>>> answer) {
         visited.add(current);
         discovery.put(current, counter[0]);
         lowpoint.put(current, counter[0]);
         counter[0]++;
 
-        for (Vertex v : this.adjacencyMap.get(current)) {
+        for (Vertex<V> v : this.adjacencyMap.get(current)) {
             if (v.equals(previous))
                 continue;
 
             if (!visited.contains(v)) {
-                stack.push(new Edge(current, v));
+                stack.push(new Edge<>(current, v));
                 biconnectedComponentsDFS(visited, v, current, discovery, lowpoint, counter, stack, answer);
 
                 lowpoint.put(current, Math.min(lowpoint.get(current), lowpoint.get(v)));
 
                 if (lowpoint.get(v) >= discovery.get(current)) {
-                    Set<Edge> component = new HashSet<>();
-                    Edge target = new Edge(current, v);
-                    Edge e;
+                    Set<Edge<V>> component = new HashSet<>();
+                    Edge<V> target = new Edge<>(current, v);
+                    Edge<V> e;
                     do {
                         e = stack.pop();
                         component.add(e);
@@ -779,25 +779,25 @@ public class UndirectedGraph extends Graph {
                 }
 
             } else if (discovery.get(v) < discovery.get(current)) {
-                stack.push(new Edge(current, v));
+                stack.push(new Edge<>(current, v));
                 lowpoint.put(current, Math.min(lowpoint.get(current), discovery.get(v)));
             }
         }
 
         if (previous == null && !stack.isEmpty()) {
-            Set<Edge> component = new HashSet<>();
+            Set<Edge<V>> component = new HashSet<>();
             while (!stack.isEmpty())
                 component.add(stack.pop());
             answer.add(component);
         }
     }
 
-    private void markComponentDFS(Vertex current, Set<Vertex> visited, Set<Vertex> component, Set<Edge> bridges) {
+    private void markComponentDFS(Vertex<V> current, Set<Vertex<V>> visited, Set<Vertex<V>> component, Set<Edge<V>> bridges) {
         visited.add(current);
         component.add(current);
 
-        for (Vertex v : this.adjacencyMap.get(current)) {
-            Edge e = new Edge(current, v);
+        for (Vertex<V> v : this.adjacencyMap.get(current)) {
+            Edge<V> e = new Edge<>(current, v);
             if (visited.contains(v) || bridges.contains(e))
                 continue;
             markComponentDFS(v, visited, component, bridges);
@@ -805,10 +805,10 @@ public class UndirectedGraph extends Graph {
     }
 
     private boolean isConnectedExcludingIsolated() {
-        Vertex startNode = null;
+        Vertex<V> startNode = null;
         int nonIsolatedCount = 0;
 
-        for (Vertex v : this.vertices) {
+        for (Vertex<V> v : this.vertices) {
             if (degreeOf(v) > 0) {
                 nonIsolatedCount++;
                 if (startNode == null)
@@ -822,10 +822,10 @@ public class UndirectedGraph extends Graph {
         return countReachable(startNode, new HashSet<>()) == nonIsolatedCount;
     }
 
-    private int countReachable(Vertex v, Set<Vertex> visited) {
+    private int countReachable(Vertex<V> v, Set<Vertex<V>> visited) {
         visited.add(v);
         int count = 1;
-        for (Vertex neighbor : this.adjacencyMap.get(v)) {
+        for (Vertex<V> neighbor : this.adjacencyMap.get(v)) {
             if (!visited.contains(neighbor)) {
                 count += countReachable(neighbor, visited);
             }
@@ -833,14 +833,14 @@ public class UndirectedGraph extends Graph {
         return count;
     }
 
-    private boolean isValidEdgeFleury(Vertex u, Vertex v) {
+    private boolean isValidEdgeFleury(Vertex<V> u, Vertex<V> v) {
         if (degreeOf(u) == 1)
             return true;
 
         return !isBridge(u, v);
     }
 
-    private boolean isBridge(Vertex u, Vertex v) {
+    private boolean isBridge(Vertex<V> u, Vertex<V> v) {
         int before = countReachable(u, new HashSet<>());
         removeEdge(u.id(), v.id());
         int after = countReachable(u, new HashSet<>());
@@ -849,10 +849,10 @@ public class UndirectedGraph extends Graph {
         return after < before;
     }
 
-    private int maxMatchingBFS(Map<Vertex, Vertex> matching, Set<Vertex> X, Set<Vertex> Y,
-            Map<Vertex, Integer> distances) {
-        Deque<Vertex> queue = new ArrayDeque<>();
-        for (Vertex x : X) {
+    private int maxMatchingBFS(Map<Vertex<V>, Vertex<V>> matching, Set<Vertex<V>> X, Set<Vertex<V>> Y,
+            Map<Vertex<V>, Integer> distances) {
+        Deque<Vertex<V>> queue = new ArrayDeque<>();
+        for (Vertex<V> x : X) {
             if (!matching.containsKey(x)) {
                 distances.put(x, 0);
                 queue.add(x);
@@ -862,10 +862,10 @@ public class UndirectedGraph extends Graph {
         distances.put(null, Integer.MAX_VALUE);
 
         while (!queue.isEmpty()) {
-            Vertex x = queue.poll();
+            Vertex<V> x = queue.poll();
             if (distances.get(x) < distances.get(null)) {
-                for (Vertex y : this.adjacencyMap.get(x)) {
-                    Vertex mate = matching.get(y);
+                for (Vertex<V> y : this.adjacencyMap.get(x)) {
+                    Vertex<V> mate = matching.get(y);
                     if (mate == null) {
                         if (distances.get(null) == Integer.MAX_VALUE)
                             distances.put(null, distances.get(x) + 1);
@@ -881,12 +881,12 @@ public class UndirectedGraph extends Graph {
         return distances.get(null);
     }
 
-    private boolean maxMatchingDFS(Vertex u, Map<Vertex, Vertex> matching, Map<Vertex, Integer> distances,
+    private boolean maxMatchingDFS(Vertex<V> u, Map<Vertex<V>, Vertex<V>> matching, Map<Vertex<V>, Integer> distances,
             int distToFreeY) {
         int distU = distances.get(u);
 
-        for (Vertex v : this.adjacencyMap.get(u)) {
-            Vertex pairOfV = matching.get(v);
+        for (Vertex<V> v : this.adjacencyMap.get(u)) {
+            Vertex<V> pairOfV = matching.get(v);
 
             if (pairOfV == null) {
                 if (distToFreeY == distU + 1) {

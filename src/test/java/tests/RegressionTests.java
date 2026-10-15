@@ -40,6 +40,10 @@ public class RegressionTests {
         runTest("Digraph: Eulerian Properties", RegressionTests::testDigraphEulerian);
         runTest("Digraph: Complex SCC", RegressionTests::testDigraphSCCComplex);
 
+        // Generics & Type Safety Tests
+        System.out.println("\n--- GENERICS & TYPE SAFETY TESTS ---");
+        runTest("Generics: Integer Graph & Edge Symmetry", RegressionTests::testGenericTypes);
+
         System.out.println("\n======================================");
         System.out.println("SUMMARY:");
         System.out.println("PASSED: " + testsPassed);
@@ -527,6 +531,31 @@ public class RegressionTests {
         Digraph cyclesComplex = loadDigraph("d_cycles_complex.txt");
         Set<Set<Graph.Vertex>> complexSCC = cyclesComplex.stronglyConnectedComponentsKS();
         check(complexSCC.size() >= 1, "Complex graph has SCCs");
+    }
+
+    private static void testGenericTypes() {
+        UndirectedGraph<Integer> g = new UndirectedGraph<>();
+        g.addEdge(1, 2);
+        g.addEdge(2, 3);
+        g.addEdge(3, 1);
+        check(g.order() == 3, "Integer graph order");
+        check(g.size() == 3, "Integer graph size");
+        check(g.isConnected(), "Integer graph connected");
+        check(g.hasCycles(), "Integer graph has cycle");
+        check(g.distanceBFS(1, 3) == 1, "Distance 1 to 3 is 1");
+
+        UndirectedGraph.Edge<Integer> e12 = new UndirectedGraph.Edge<>(g.getVertexById(1), g.getVertexById(2));
+        UndirectedGraph.Edge<Integer> e21 = new UndirectedGraph.Edge<>(g.getVertexById(2), g.getVertexById(1));
+        check(e12.equals(e21), "Edge equality is symmetric");
+        check(e12.hashCode() == e21.hashCode(), "Edge hashCode is symmetric");
+
+        Digraph<Integer> dg = new Digraph<>();
+        dg.addEdge(1, 2);
+        dg.addEdge(2, 3);
+        check(dg.order() == 3, "Digraph integer order");
+        check(dg.size() == 2, "Digraph integer size");
+        check(!dg.hasCycles(), "Digraph integer has no cycles");
+        check(dg.topologicalSort().size() == 3, "Digraph integer topological sort");
     }
 
     // ------------------------------ HELPER FRAMEWORK
