@@ -10,7 +10,9 @@ public class Digraph<V> extends Graph<V> {
         }
     }
 
-public Digraph() {
+    protected final Map<Vertex<V>, Set<Vertex<V>>> inAdjacencyMap = new HashMap<>();
+
+    public Digraph() {
         super();
     }
 
@@ -30,6 +32,21 @@ public Digraph() {
     // -------------------------- INHERITED METHODS ---------- //
 
     @Override
+    public Vertex<V> addVertex(V id) {
+        Vertex<V> v = super.addVertex(id);
+        this.inAdjacencyMap.putIfAbsent(v, new HashSet<>());
+        return v;
+    }
+
+    @Override
+    public void addVertex(Vertex<V> v) {
+        super.addVertex(v);
+        if (v != null) {
+            this.inAdjacencyMap.putIfAbsent(v, new HashSet<>());
+        }
+    }
+
+    @Override
     public void removeVertex(V id) {
         Vertex<V> v = getVertexById(id);
         if (v == null)
@@ -38,8 +55,13 @@ public Digraph() {
         for (Set<Vertex<V>> neighbors : this.adjacencyMap.values()) {
             neighbors.remove(v);
         }
+        for (Set<Vertex<V>> predecessors : this.inAdjacencyMap.values()) {
+            predecessors.remove(v);
+        }
         this.vertices.remove(v);
+        this.vertexMap.remove(id);
         this.adjacencyMap.remove(v);
+        this.inAdjacencyMap.remove(v);
         this.edges.removeIf(e -> e.from.equals(v) || e.to.equals(v));
     }
 
@@ -49,8 +71,10 @@ public Digraph() {
 
         this.addVertex(from);
         this.addVertex(to);
-        if (this.edges.add(edge))
+        if (this.edges.add(edge)) {
             this.adjacencyMap.get(from).add(to);
+            this.inAdjacencyMap.get(to).add(from);
+        }
     }
 
     @Override
@@ -59,31 +83,44 @@ public Digraph() {
         Vertex<V> vTo = getVertexById(to);
         if (vFrom != null && vTo != null && this.edges.remove(new Edge<>(vFrom, vTo))) {
             this.adjacencyMap.get(vFrom).remove(vTo);
+            Set<Vertex<V>> inSet = this.inAdjacencyMap.get(vTo);
+            if (inSet != null) {
+                inSet.remove(vFrom);
+            }
         }
     }
 
     public int inDegree(Vertex<V> v) {
-        if (!this.vertices.contains(v))
+        if (v == null || !this.vertices.contains(v))
             return 0;
-        int count = 0;
-        for (Graph.Edge<V> e : this.edges) {
-            if (e.to.equals(v)) {
-                count++;
-            }
-        }
-        return count;
+        Set<Vertex<V>> inSet = this.inAdjacencyMap.get(v);
+        return inSet != null ? inSet.size() : 0;
+    }
+
+    public int inDegree(V id) {
+        return inDegree(getVertexById(id));
     }
 
     public int outDegree(Vertex<V> v) {
-        if (!this.vertices.contains(v))
+        if (v == null || !this.vertices.contains(v))
             return 0;
-        int count = 0;
-        for (Graph.Edge<V> e : this.edges) {
-            if (e.from.equals(v)) {
-                count++;
-            }
-        }
-        return count;
+        Set<Vertex<V>> outSet = this.adjacencyMap.get(v);
+        return outSet != null ? outSet.size() : 0;
+    }
+
+    public int outDegree(V id) {
+        return outDegree(getVertexById(id));
+    }
+
+    public Set<Vertex<V>> getPredecessors(Vertex<V> v) {
+        if (v == null)
+            return Collections.emptySet();
+        Set<Vertex<V>> preds = this.inAdjacencyMap.get(v);
+        return preds != null ? Collections.unmodifiableSet(preds) : Collections.emptySet();
+    }
+
+    public Set<Vertex<V>> getPredecessors(V id) {
+        return getPredecessors(getVertexById(id));
     }
 
     @Override
@@ -162,20 +199,13 @@ public Digraph() {
      */
     public List<Vertex<V>> topologicalSort() {
         Map<Vertex<V>, Integer> inDegree = new HashMap<>();
-        for (Vertex<V> v : this.vertices) {
-            inDegree.put(v, 0);
-        }
-
-        for (Vertex<V> v : this.vertices) {
-            for (Vertex<V> neighbor : this.adjacencyMap.get(v)) {
-                inDegree.put(neighbor, inDegree.get(neighbor) + 1);
-            }
-        }
-
         Deque<Vertex<V>> q = new ArrayDeque<>();
-        for (Map.Entry<Vertex<V>, Integer> entry : inDegree.entrySet()) {
-            if (entry.getValue() == 0)
-                q.add(entry.getKey());
+
+        for (Vertex<V> v : this.vertices) {
+            int deg = inDegree(v);
+            inDegree.put(v, deg);
+            if (deg == 0)
+                q.add(v);
         }
 
         List<Vertex<V>> sort = new ArrayList<>();
@@ -185,8 +215,9 @@ public Digraph() {
             sort.add(current);
             count++;
             for (Vertex<V> neighbor : this.adjacencyMap.get(current)) {
-                inDegree.put(neighbor, inDegree.get(neighbor) - 1);
-                if (inDegree.get(neighbor) == 0)
+                int newDeg = inDegree.get(neighbor) - 1;
+                inDegree.put(neighbor, newDeg);
+                if (newDeg == 0)
                     q.add(neighbor);
             }
         }

@@ -374,7 +374,7 @@ public class UndirectedGraph<V> extends Graph<V> {
     }
 
     /**
-     * Algorithm: Hierholzer's Algorithm
+     * Algorithm: Hierholzer's Algorithm (linear, non-mutating)
      * Complexity: Θ(V + E) time, O(V + E) space
      */
     public List<Edge<V>> eulerianTrailHierholzer() {
@@ -384,106 +384,87 @@ public class UndirectedGraph<V> extends Graph<V> {
         if (this.hasEulerianCircuit())
             return eulerianCircuitHierholzer();
 
-        List<Edge<V>> answer = new ArrayList<>();
-        UndirectedGraph<V> copy = this.copy();
+        if (this.edges.isEmpty())
+            return new ArrayList<>();
 
         Vertex<V> start = null;
-        Vertex<V> end = null;
-        for (Vertex<V> v : copy.vertices) {
-            if (copy.degreeOf(v) % 2 != 0) {
-                if (start == null)
-                    start = v;
-                else
-                    end = v;
-            }
-        }
-
-        if (start == null || end == null)
-            return answer;
-
-        copy.addEdge(end, start);
-
-        Deque<Edge<V>> stack = new ArrayDeque<>();
-        Vertex<V> current = start;
-
-        while (!stack.isEmpty() || copy.degreeOf(current) > 0) {
-            if (copy.degreeOf(current) > 0) {
-                Vertex<V> next = copy.adjacencyMap.get(current).iterator().next();
-                Edge<V> e = new Edge<>(current, next);
-
-                stack.push(e);
-                copy.removeEdge(current.id(), next.id());
-                current = next;
-            } else {
-                Edge<V> e = stack.pop();
-                answer.add(e);
-                current = e.from.equals(current) ? e.to : e.from;
-            }
-        }
-
-        Collections.reverse(answer);
-
-        for (int i = 0; i < answer.size(); i++) {
-            Edge<V> e = answer.get(i);
-            if ((e.from.equals(end) && e.to.equals(start)) ||
-                    (e.from.equals(start) && e.to.equals(end))) {
-                List<Edge<V>> trail = new ArrayList<>();
-                for (int j = i + 1; j < answer.size(); j++) {
-                    trail.add(answer.get(j));
-                }
-                for (int j = 0; j < i; j++) {
-                    trail.add(answer.get(j));
-                }
-                return trail;
-            }
-        }
-
-        return answer;
-    }
-
-    /**
-     * Algorithm: Hierholzer's Algorithm
-     * Complexity: Θ(V + E) time, O(V + E) space
-     */
-    public List<Edge<V>> eulerianCircuitHierholzer() {
-        if (!hasEulerianCircuit())
-            return null;
-
-        List<Edge<V>> answer = new ArrayList<>();
-        UndirectedGraph<V> copy = this.copy();
-
-        Vertex<V> start = null;
-        for (Vertex<V> v : copy.vertices) {
-            if (copy.degreeOf(v) > 0) {
+        for (Vertex<V> v : this.vertices) {
+            if (degreeOf(v) % 2 != 0) {
                 start = v;
                 break;
             }
         }
 
         if (start == null)
-            return answer;
+            return new ArrayList<>();
 
-        Deque<Edge<V>> stack = new ArrayDeque<>();
-        Vertex<V> current = start;
+        return hierholzerWalk(start);
+    }
 
-        while (!stack.isEmpty() || copy.degreeOf(current) > 0) {
+    /**
+     * Algorithm: Hierholzer's Algorithm (linear, non-mutating)
+     * Complexity: Θ(V + E) time, O(V + E) space
+     */
+    public List<Edge<V>> eulerianCircuitHierholzer() {
+        if (!hasEulerianCircuit())
+            return null;
 
-            if (copy.degreeOf(current) > 0) {
-                Vertex<V> next = copy.adjacencyMap.get(current).iterator().next();
-                Edge<V> e = new Edge<>(current, next);
+        if (this.edges.isEmpty())
+            return new ArrayList<>();
 
-                stack.push(e);
-                copy.removeEdge(current.id(), next.id());
-                current = next;
-            } else {
-                Edge<V> e = stack.pop();
-                answer.add(e);
-                current = e.from.equals(current) ? e.to : e.from;
+        Vertex<V> start = null;
+        for (Vertex<V> v : this.vertices) {
+            if (degreeOf(v) > 0) {
+                start = v;
+                break;
             }
         }
 
-        Collections.reverse(answer);
-        return answer;
+        if (start == null)
+            return new ArrayList<>();
+
+        return hierholzerWalk(start);
+    }
+
+    private List<Edge<V>> hierholzerWalk(Vertex<V> start) {
+        Set<Edge<V>> visitedEdges = new HashSet<>();
+        Map<Vertex<V>, Iterator<Vertex<V>>> adjIters = new HashMap<>();
+        for (Vertex<V> v : this.vertices) {
+            adjIters.put(v, this.adjacencyMap.get(v).iterator());
+        }
+
+        Deque<Vertex<V>> stack = new ArrayDeque<>();
+        List<Vertex<V>> tourVertices = new ArrayList<>();
+
+        stack.push(start);
+        while (!stack.isEmpty()) {
+            Vertex<V> u = stack.peek();
+            Iterator<Vertex<V>> it = adjIters.get(u);
+            boolean advanced = false;
+
+            while (it != null && it.hasNext()) {
+                Vertex<V> next = it.next();
+                Edge<V> e = new Edge<>(u, next);
+                if (!visitedEdges.contains(e)) {
+                    visitedEdges.add(e);
+                    stack.push(next);
+                    advanced = true;
+                    break;
+                }
+            }
+
+            if (!advanced) {
+                tourVertices.add(stack.pop());
+            }
+        }
+
+        Collections.reverse(tourVertices);
+
+        List<Edge<V>> result = new ArrayList<>();
+        for (int i = 0; i < tourVertices.size() - 1; i++) {
+            result.add(new Edge<>(tourVertices.get(i), tourVertices.get(i + 1)));
+        }
+        return result;
     }
 
     // ----- BIPARTITION AND MATCHING ----- //
@@ -571,6 +552,12 @@ public class UndirectedGraph<V> extends Graph<V> {
         List<Set<Vertex<V>>> partitions = getBipartition();
         if (partitions == null)
             return null;
+        return maxMatching(partitions);
+    }
+
+    public Set<Edge<V>> maxMatching(List<Set<Vertex<V>>> partitions) {
+        if (partitions == null || partitions.size() < 2)
+            return null;
 
         Set<Vertex<V>> X = partitions.get(0);
         Set<Vertex<V>> Y = partitions.get(1);
@@ -597,11 +584,14 @@ public class UndirectedGraph<V> extends Graph<V> {
      * Complexity: O(E√V) time, O(V) space
      */
     public Set<Vertex<V>> minVertexCover() {
-        Set<Edge<V>> matchingEdges = maxMatching();
+        List<Set<Vertex<V>>> partitions = getBipartition();
+        if (partitions == null)
+            return null;
+
+        Set<Edge<V>> matchingEdges = maxMatching(partitions);
         if (matchingEdges == null)
             return null;
 
-        List<Set<Vertex<V>>> partitions = getBipartition();
         Set<Vertex<V>> X = partitions.get(0);
         Set<Vertex<V>> Y = partitions.get(1);
 

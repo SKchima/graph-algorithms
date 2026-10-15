@@ -44,6 +44,12 @@ public class RegressionTests {
         System.out.println("\n--- GENERICS & TYPE SAFETY TESTS ---");
         runTest("Generics: Integer Graph & Edge Symmetry", RegressionTests::testGenericTypes);
 
+        // PR 3 Spec-Driven Algorithm Optimizations Tests
+        System.out.println("\n--- PR 3 SPEC-DRIVEN ALGORITHM OPTIMIZATIONS TESTS ---");
+        runTest("Spec: Hierholzer Immutability & Edge Cases", RegressionTests::testHierholzerImmutabilityAndEdgeCases);
+        runTest("Spec: In-Degree & Out-Degree O(1) Consistency", RegressionTests::testDigraphDegreeConsistency);
+        runTest("Spec: König & Hopcroft-Karp Dual Invariants", RegressionTests::testKonigDualInvariants);
+
         System.out.println("\n======================================");
         System.out.println("SUMMARY:");
         System.out.println("PASSED: " + testsPassed);
@@ -281,13 +287,13 @@ public class RegressionTests {
         check(disconnected.maxMatching() != null, "Disconnected bipartite matching is not null");
     }
 
-    private static boolean isValidEulerianPath(UndirectedGraph g, List<UndirectedGraph.Edge> path) {
+    private static boolean isValidEulerianPath(UndirectedGraph<?> g, List<?> path) {
         if (path.size() != g.size())
             return false;
 
         // Check all edges exist in graph
-        Set<UndirectedGraph.Edge> pathEdges = new HashSet<>(path);
-        for (UndirectedGraph.Edge e : path) {
+        Set<Object> pathEdges = new HashSet<>(path);
+        for (Object e : path) {
             if (!g.getEdges().contains(e))
                 return false;
         }
@@ -298,8 +304,8 @@ public class RegressionTests {
 
         // Check path continuity
         for (int i = 0; i < path.size() - 1; i++) {
-            UndirectedGraph.Edge e1 = path.get(i);
-            UndirectedGraph.Edge e2 = path.get(i + 1);
+            Graph.Edge<?> e1 = (Graph.Edge<?>) path.get(i);
+            Graph.Edge<?> e2 = (Graph.Edge<?>) path.get(i + 1);
             if (!areConnected(e1, e2))
                 return false;
         }
@@ -307,7 +313,7 @@ public class RegressionTests {
         return true;
     }
 
-    private static boolean areConnected(UndirectedGraph.Edge e1, UndirectedGraph.Edge e2) {
+    private static boolean areConnected(Graph.Edge<?> e1, Graph.Edge<?> e2) {
         return e1.from.equals(e2.from) || e1.from.equals(e2.to) ||
                 e1.to.equals(e2.from) || e1.to.equals(e2.to);
     }
@@ -556,6 +562,93 @@ public class RegressionTests {
         check(dg.size() == 2, "Digraph integer size");
         check(!dg.hasCycles(), "Digraph integer has no cycles");
         check(dg.topologicalSort().size() == 3, "Digraph integer topological sort");
+    }
+
+    private static void testHierholzerImmutabilityAndEdgeCases() {
+        // 1. Immutability
+        UndirectedGraph<String> circuitGraph = loadUndirectedGraph("u_circuit.txt");
+        int initOrder = circuitGraph.order();
+        int initSize = circuitGraph.size();
+        List<UndirectedGraph.Edge<String>> circuit = circuitGraph.eulerianCircuitHierholzer();
+        check(circuitGraph.order() == initOrder, "Hierholzer circuit must not mutate graph order");
+        check(circuitGraph.size() == initSize, "Hierholzer circuit must not mutate graph size");
+        check(circuit != null && circuit.size() == initSize, "Circuit covers all edges");
+        check(isValidEulerianPath(circuitGraph, circuit), "Hierholzer circuit is valid and continuous");
+
+        UndirectedGraph<String> trailGraph = loadUndirectedGraph("u_trail.txt");
+        int trailInitOrder = trailGraph.order();
+        int trailInitSize = trailGraph.size();
+        List<UndirectedGraph.Edge<String>> trail = trailGraph.eulerianTrailHierholzer();
+        check(trailGraph.order() == trailInitOrder, "Hierholzer trail must not mutate graph order");
+        check(trailGraph.size() == trailInitSize, "Hierholzer trail must not mutate graph size");
+        check(trail != null && trail.size() == trailInitSize, "Trail covers all edges");
+        check(isValidEulerianPath(trailGraph, trail), "Hierholzer trail is valid and continuous");
+
+        // 2. Edge Cases: Empty graph, isolated vertex, disconnected
+        UndirectedGraph<Integer> emptyG = new UndirectedGraph<>();
+        check(emptyG.eulerianCircuitHierholzer() != null && emptyG.eulerianCircuitHierholzer().isEmpty(), "Empty graph circuit is empty list");
+        check(emptyG.eulerianTrailHierholzer() != null && emptyG.eulerianTrailHierholzer().isEmpty(), "Empty graph trail is empty list");
+
+        UndirectedGraph<Integer> isolatedG = new UndirectedGraph<>();
+        isolatedG.addVertex(1);
+        isolatedG.addVertex(2);
+        check(isolatedG.eulerianCircuitHierholzer() != null && isolatedG.eulerianCircuitHierholzer().isEmpty(), "Isolated vertices circuit is empty list");
+        check(isolatedG.eulerianTrailHierholzer() != null && isolatedG.eulerianTrailHierholzer().isEmpty(), "Isolated vertices trail is empty list");
+
+        UndirectedGraph<String> nonEulerian = loadUndirectedGraph("u_not_eulerian.txt");
+        check(nonEulerian.eulerianCircuitHierholzer() == null, "Non-Eulerian circuit returns null");
+        check(nonEulerian.eulerianTrailHierholzer() == null, "Non-Eulerian trail returns null");
+    }
+
+    private static void testDigraphDegreeConsistency() {
+        Digraph<Integer> dg = new Digraph<>();
+        dg.addEdge(1, 2);
+        dg.addEdge(1, 3);
+        dg.addEdge(2, 3);
+
+        check(dg.inDegree(1) == 0, "inDegree(1) == 0");
+        check(dg.inDegree(2) == 1, "inDegree(2) == 1");
+        check(dg.inDegree(3) == 2, "inDegree(3) == 2");
+
+        check(dg.outDegree(1) == 2, "outDegree(1) == 2");
+        check(dg.outDegree(2) == 1, "outDegree(2) == 1");
+        check(dg.outDegree(3) == 0, "outDegree(3) == 0");
+
+        // Null and non-existent queries
+        check(dg.inDegree(99) == 0, "inDegree(99) == 0");
+        check(dg.outDegree(99) == 0, "outDegree(99) == 0");
+        check(dg.inDegree((Graph.Vertex<Integer>) null) == 0, "inDegree(null) == 0");
+        check(dg.outDegree((Graph.Vertex<Integer>) null) == 0, "outDegree(null) == 0");
+
+        // Edge removal updates
+        dg.removeEdge(1, 3);
+        check(dg.inDegree(3) == 1, "After removeEdge(1,3), inDegree(3) == 1");
+        check(dg.outDegree(1) == 1, "After removeEdge(1,3), outDegree(1) == 1");
+
+        // Vertex removal updates
+        dg.removeVertex(2);
+        check(dg.inDegree(3) == 0, "After removeVertex(2), inDegree(3) == 0");
+        check(dg.order() == 2, "Digraph order is 2 after removeVertex");
+        check(dg.size() == 0, "Digraph size is 0 after removing vertices");
+    }
+
+    private static void testKonigDualInvariants() {
+        UndirectedGraph<String> g = loadUndirectedGraph("u_bipartite_matching.txt");
+        Set<UndirectedGraph.Edge<String>> matching = g.maxMatching();
+        Set<Graph.Vertex<String>> cover = g.minVertexCover();
+        Set<Graph.Vertex<String>> indep = g.maxIndependentSet();
+
+        check(matching != null && cover != null && indep != null, "Dual sets must not be null");
+        check(matching.size() == cover.size(), "König theorem: |M| == |C|");
+        check(cover.size() + indep.size() == g.order(), "Gallai theorem: |C| + |I| == |V|");
+
+        // Disconnected bipartite graph
+        UndirectedGraph<String> disc = loadUndirectedGraph("u_disconnected.txt");
+        Set<UndirectedGraph.Edge<String>> discMatching = disc.maxMatching();
+        Set<Graph.Vertex<String>> discCover = disc.minVertexCover();
+        Set<Graph.Vertex<String>> discIndep = disc.maxIndependentSet();
+        check(discMatching.size() == discCover.size(), "Disconnected König theorem: |M| == |C|");
+        check(discCover.size() + discIndep.size() == disc.order(), "Disconnected Gallai theorem: |C| + |I| == |V|");
     }
 
     // ------------------------------ HELPER FRAMEWORK
