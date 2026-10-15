@@ -25,7 +25,6 @@ public class RegressionTests {
         runTest("UndirectedGraph: Bridges & Articulation Points", RegressionTests::testUndirectedStructures);
         runTest("UndirectedGraph: Eulerian Properties", RegressionTests::testUndirectedEulerian);
         runTest("UndirectedGraph: Bipartite", RegressionTests::testUndirectedBipartite);
-        runTest("UndirectedGraph: Bipartite", RegressionTests::testUndirectedBipartite);
         runTest("UndirectedGraph: Bipartite Algorithms", RegressionTests::testBipartiteAlgorithms);
         runTest("UndirectedGraph: Biconnectivity", RegressionTests::testUndirectedBiconnectivity);
         runTest("UndirectedGraph: Hierholzer Algorithm", RegressionTests::testUndirectedHierholzer);
@@ -34,7 +33,6 @@ public class RegressionTests {
         System.out.println("\n--- DIGRAPH TESTS ---");
         runTest("Digraph: Cycles", RegressionTests::testDigraphCycles);
         runTest("Digraph: Topological Sort", RegressionTests::testDigraphTopoSort);
-        runTest("Digraph: Strongly Connected Components", RegressionTests::testDigraphSCC);
         runTest("Digraph: Strongly Connected Components", RegressionTests::testDigraphSCC);
         runTest("Digraph: Degrees", RegressionTests::testDigraphDegrees);
         runTest("Digraph: Bipartite Types", RegressionTests::testDigraphBipartite);
