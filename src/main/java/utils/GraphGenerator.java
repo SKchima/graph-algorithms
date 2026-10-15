@@ -85,4 +85,57 @@ public class GraphGenerator {
             e.printStackTrace();
         }
     }
+
+    public static void generateAndSaveWeightedUndirected(String filename, int V, int E) {
+        try (PrintWriter out = new PrintWriter(new FileWriter(DATA_DIR + filename))) {
+            Random rand = new Random(42);
+            Set<String> edges = new HashSet<>();
+            int generatedEdges = 0;
+
+            for (int i = 2; i <= V; i++) {
+                int u = rand.nextInt(i - 1) + 1;
+                double w = rand.nextInt(100) + 1.0;
+                out.println(i + " " + u + " " + w);
+                generatedEdges++;
+            }
+
+            while (generatedEdges < E) {
+                int u = rand.nextInt(V) + 1;
+                int v = rand.nextInt(V) + 1;
+                if (u == v) continue;
+
+                String key = u < v ? u + "-" + v : v + "-" + u;
+                if (!edges.contains(key)) {
+                    edges.add(key);
+                    double w = rand.nextInt(100) + 1.0;
+                    out.println(u + " " + v + " " + w);
+                    generatedEdges++;
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void generateAndSaveFlowNetwork(String filename, int V, int E) {
+        try (PrintWriter out = new PrintWriter(new FileWriter(DATA_DIR + filename))) {
+            Random rand = new Random(42);
+            Set<String> edges = new HashSet<>();
+            int generatedEdges = 0;
+
+            while (generatedEdges < E) {
+                int u = rand.nextInt(V - 1) + 1;
+                int v = rand.nextInt(V - u) + u + 1;
+                String key = u + "->" + v;
+                if (!edges.contains(key)) {
+                    edges.add(key);
+                    double cap = rand.nextInt(50) + 1.0;
+                    out.println(u + " " + v + " " + cap);
+                    generatedEdges++;
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }

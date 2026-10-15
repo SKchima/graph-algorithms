@@ -8,4 +8,5 @@ out/*
 
 *.class
 .agents/
-
+inputs/test/stress_flow_network.txt
+inputs/test/stress_weighted_undirected.txt

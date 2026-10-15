@@ -1,6 +1,7 @@
 package tests;
 
 import graphs.*;
+import utils.*;
 import java.io.*;
 import java.util.*;
 
@@ -18,7 +19,7 @@ public class RegressionTests {
         runTest("Graph: BFS Distances", RegressionTests::testBFS);
         runTest("Graph: Copy Mechanism", RegressionTests::testGraphCopy);
 
-        // UndirectedGraph Tests
+        // Undirected Graph Tests
         System.out.println("\n--- UNDIRECTED GRAPH TESTS ---");
         runTest("UndirectedGraph: Connectivity & Components", RegressionTests::testUndirectedConnectivity);
         runTest("UndirectedGraph: Cycles", RegressionTests::testUndirectedCycles);
@@ -49,6 +50,20 @@ public class RegressionTests {
         runTest("Spec: Hierholzer Immutability & Edge Cases", RegressionTests::testHierholzerImmutabilityAndEdgeCases);
         runTest("Spec: In-Degree & Out-Degree O(1) Consistency", RegressionTests::testDigraphDegreeConsistency);
         runTest("Spec: König & Hopcroft-Karp Dual Invariants", RegressionTests::testKonigDualInvariants);
+
+        // Weighted Graph Domain & Compatibility Tests (Etapa 1 & 2)
+        System.out.println("\n--- WEIGHTED GRAPH DOMAIN & COMPATIBILITY TESTS ---");
+        runTest("WeightedUndirectedGraph: Weights, Symmetry & Inheritance", RegressionTests::testWeightedUndirectedGraph);
+        runTest("WeightedDigraph: Weights, Transpose & Inheritance", RegressionTests::testWeightedDigraph);
+        runTest("DisjointSetUnion: Union, Find & Path Compression", RegressionTests::testDisjointSetUnion);
+
+        // Weighted Graph Algorithms (Etapa 3)
+        System.out.println("\n--- WEIGHTED GRAPH ALGORITHMS (ETAPA 3) ---");
+        runTest("Shortest Paths: Dijkstra (Distances & Path Reconstruction)", RegressionTests::testDijkstraAndShortestPaths);
+        runTest("Shortest Paths: Bellman-Ford & Negative Cycles", RegressionTests::testBellmanFordAndNegativeCycles);
+        runTest("Shortest Paths: Floyd-Warshall All-Pairs (APSP)", RegressionTests::testFloydWarshallAllPairs);
+        runTest("MST: Kruskal vs Prim (Dual Equivalence & DSU)", RegressionTests::testMinimumSpanningTreeKruskalAndPrim);
+        runTest("Flow Networks: Edmonds-Karp, Ford-Fulkerson & Min-Cut", RegressionTests::testMaxFlowAndMinCut);
 
         System.out.println("\n======================================");
         System.out.println("SUMMARY:");
@@ -649,6 +664,233 @@ public class RegressionTests {
         Set<Graph.Vertex<String>> discIndep = disc.maxIndependentSet();
         check(discMatching.size() == discCover.size(), "Disconnected König theorem: |M| == |C|");
         check(discCover.size() + discIndep.size() == disc.order(), "Disconnected Gallai theorem: |C| + |I| == |V|");
+    }
+
+    private static void testWeightedUndirectedGraph() {
+        WeightedUndirectedGraph<Integer> wg = new WeightedUndirectedGraph<>();
+        wg.addEdge(1, 2, 3.5);
+        wg.addEdge(2, 3, 4.0);
+        wg.addEdge(3, 1); // default 1.0
+
+        check(wg.order() == 3, "Weighted undirected order");
+        check(wg.size() == 3, "Weighted undirected size");
+        check(wg.getWeight(1, 2) == 3.5, "Weight 1-2 is 3.5");
+        check(wg.getWeight(2, 1) == 3.5, "Weight 2-1 is symmetric 3.5");
+        check(wg.getWeight(3, 1) == 1.0, "Default weight 3-1 is 1.0");
+        check(wg.getWeight(1, 99) == Double.POSITIVE_INFINITY, "Non-existent edge weight is +Inf");
+
+        // Update weight
+        wg.addEdge(1, 2, 7.5);
+        check(wg.size() == 3, "Size remains 3 after updating weight");
+        check(wg.getWeight(1, 2) == 7.5, "Updated weight is 7.5");
+        check(wg.getWeight(2, 1) == 7.5, "Updated weight symmetric is 7.5");
+
+        // Clone/Copy
+        WeightedUndirectedGraph<Integer> copy = wg.copy();
+        check(copy.getWeight(1, 2) == 7.5, "Copy retains weight");
+        copy.removeEdge(1, 2);
+        check(copy.getWeight(1, 2) == Double.POSITIVE_INFINITY, "Copy removed edge");
+        check(wg.getWeight(1, 2) == 7.5, "Original retains weight");
+
+        // Inherited algorithms test (Etapa 2)
+        check(wg.isConnected(), "Weighted undirected is connected");
+        check(wg.hasCycles(), "Weighted undirected has cycles");
+        check(!wg.isBipartite(), "Triangle is not bipartite");
+        check(wg.eulerianCircuitHierholzer() != null, "Eulerian circuit works on weighted graph");
+    }
+
+    private static void testWeightedDigraph() {
+        WeightedDigraph<String> wd = new WeightedDigraph<>();
+        wd.addEdge("A", "B", 5.0);
+        wd.addEdge("B", "C", 2.5);
+        wd.addEdge("C", "A"); // default 1.0
+
+        check(wd.order() == 3, "Weighted digraph order");
+        check(wd.size() == 3, "Weighted digraph size");
+        check(wd.getWeight("A", "B") == 5.0, "Weight A->B is 5.0");
+        check(wd.getWeight("B", "A") == Double.POSITIVE_INFINITY, "Weight B->A is +Inf (directional)");
+        check(wd.getWeight("C", "A") == 1.0, "Weight C->A default is 1.0");
+
+        // Update weight
+        wd.addEdge("A", "B", 10.0);
+        check(wd.size() == 3, "Size remains 3 after updating weight");
+        check(wd.getWeight("A", "B") == 10.0, "Updated weight is 10.0");
+
+        // Transpose copy
+        WeightedDigraph<String> T = wd.transposeCopy();
+        check(T.getWeight("B", "A") == 10.0, "Transpose inverts direction with same weight");
+        check(T.getWeight("A", "B") == Double.POSITIVE_INFINITY, "Transpose original direction is +Inf");
+
+        // Inherited algorithms test (Etapa 2)
+        check(wd.hasCycles(), "Cycle detected in weighted digraph");
+        check(wd.inDegree("B") == 1, "inDegree is 1");
+        check(wd.outDegree("A") == 1, "outDegree is 1");
+        check(wd.stronglyConnectedComponentsKS().size() == 1, "SCC contains 1 component (cycle A->B->C->A)");
+    }
+
+    private static void testDisjointSetUnion() {
+        DisjointSetUnion<Integer> dsu = new DisjointSetUnion<>();
+        dsu.makeSet(1);
+        dsu.makeSet(2);
+        dsu.makeSet(3);
+        dsu.makeSet(4);
+
+        check(dsu.count() == 4, "Initial DSU count is 4");
+        check(!dsu.connected(1, 2), "1 and 2 not initially connected");
+
+        check(dsu.union(1, 2), "Union 1 and 2 returns true");
+        check(dsu.connected(1, 2), "1 and 2 connected");
+        check(!dsu.union(1, 2), "Duplicate union returns false");
+        check(dsu.count() == 3, "DSU count is 3");
+
+        dsu.union(3, 4);
+        check(dsu.connected(3, 4), "3 and 4 connected");
+        check(!dsu.connected(1, 3), "1 and 3 not connected");
+
+        dsu.union(2, 4);
+        check(dsu.connected(1, 3), "1 and 3 connected after transitive union");
+        check(dsu.count() == 1, "DSU count is 1 after connecting all");
+    }
+
+    private static void testDijkstraAndShortestPaths() {
+        WeightedDigraph<String> wd = new WeightedDigraph<>();
+        wd.addEdge("A", "B", 4.0);
+        wd.addEdge("A", "C", 2.0);
+        wd.addEdge("C", "B", 1.0);
+        wd.addEdge("B", "D", 5.0);
+        wd.addEdge("C", "D", 8.0);
+        wd.addEdge("C", "E", 10.0);
+        wd.addEdge("D", "E", 2.0);
+
+        Map<Graph.Vertex<String>, Double> distA = wd.dijkstraDistances("A");
+        check(distA.get(wd.getVertexById("A")) == 0.0, "Dist A->A is 0");
+        check(distA.get(wd.getVertexById("C")) == 2.0, "Dist A->C is 2");
+        check(distA.get(wd.getVertexById("B")) == 3.0, "Dist A->B is 3 (via C)");
+        check(distA.get(wd.getVertexById("D")) == 8.0, "Dist A->D is 8 (A-C-B-D)");
+        check(distA.get(wd.getVertexById("E")) == 10.0, "Dist A->E is 10 (A-C-B-D-E)");
+
+        List<Graph.Vertex<String>> path = wd.dijkstraShortestPath("A", "E");
+        check(path.size() == 5, "Shortest path length is 5 vertices");
+        check(path.get(0).id().equals("A"), "Path starts at A");
+        check(path.get(1).id().equals("C"), "Path step 1 is C");
+        check(path.get(2).id().equals("B"), "Path step 2 is B");
+        check(path.get(3).id().equals("D"), "Path step 3 is D");
+        check(path.get(4).id().equals("E"), "Path ends at E");
+
+        // Negative weight check
+        WeightedDigraph<String> negG = new WeightedDigraph<>();
+        negG.addEdge("X", "Y", -1.0);
+        boolean caught = false;
+        try {
+            negG.dijkstraDistances("X");
+        } catch (IllegalArgumentException e) {
+            caught = true;
+        }
+        check(caught, "Dijkstra rejects negative edge weights");
+    }
+
+    private static void testBellmanFordAndNegativeCycles() {
+        WeightedDigraph<String> wd = new WeightedDigraph<>();
+        wd.addEdge("S", "A", 4.0);
+        wd.addEdge("S", "B", 5.0);
+        wd.addEdge("A", "C", -2.0);
+        wd.addEdge("B", "C", 2.0);
+        wd.addEdge("C", "D", 3.0);
+
+        check(!wd.hasNegativeCycle(), "No negative cycle in DAG with negative edge");
+        Map<Graph.Vertex<String>, Double> distS = wd.bellmanFordDistances("S");
+        check(distS.get(wd.getVertexById("C")) == 2.0, "Dist S->C is 2.0 (4 - 2)");
+        check(distS.get(wd.getVertexById("D")) == 5.0, "Dist S->D is 5.0 (2 + 3)");
+
+        // Negative cycle graph
+        WeightedDigraph<String> negCycle = new WeightedDigraph<>();
+        negCycle.addEdge("1", "2", 1.0);
+        negCycle.addEdge("2", "3", -5.0);
+        negCycle.addEdge("3", "1", 2.0); // cycle 1->2->3->1 with sum -2
+        check(negCycle.hasNegativeCycle(), "Negative cycle detected");
+
+        boolean threw = false;
+        try {
+            negCycle.bellmanFordDistances("1");
+        } catch (IllegalStateException e) {
+            threw = true;
+        }
+        check(threw, "Bellman-Ford throws on negative cycle reachable from source");
+    }
+
+    private static void testFloydWarshallAllPairs() {
+        WeightedUndirectedGraph<Integer> wg = new WeightedUndirectedGraph<>();
+        wg.addEdge(1, 2, 3.0);
+        wg.addEdge(2, 3, 1.0);
+        wg.addEdge(1, 3, 6.0);
+
+        Map<Graph.Vertex<Integer>, Map<Graph.Vertex<Integer>, Double>> ap = wg.floydWarshall();
+        Graph.Vertex<Integer> v1 = wg.getVertexById(1);
+        Graph.Vertex<Integer> v2 = wg.getVertexById(2);
+        Graph.Vertex<Integer> v3 = wg.getVertexById(3);
+
+        check(ap.get(v1).get(v1) == 0.0, "APSP 1->1 is 0");
+        check(ap.get(v1).get(v2) == 3.0, "APSP 1->2 is 3");
+        check(ap.get(v1).get(v3) == 4.0, "APSP 1->3 is 4 (via 2)");
+        check(ap.get(v3).get(v1) == 4.0, "APSP symmetric 3->1 is 4");
+    }
+
+    private static void testMinimumSpanningTreeKruskalAndPrim() {
+        WeightedUndirectedGraph<String> g = new WeightedUndirectedGraph<>();
+        g.addEdge("A", "B", 4.0);
+        g.addEdge("A", "C", 2.0);
+        g.addEdge("B", "C", 1.0);
+        g.addEdge("B", "D", 5.0);
+        g.addEdge("C", "D", 8.0);
+        g.addEdge("C", "E", 10.0);
+        g.addEdge("D", "E", 2.0);
+        g.addEdge("D", "F", 6.0);
+        g.addEdge("E", "F", 3.0);
+
+        Set<WeightedEdge<String>> kruskal = g.kruskalMST();
+        Set<WeightedEdge<String>> prim = g.primMST();
+
+        check(kruskal.size() == g.order() - 1, "Kruskal MST has |V| - 1 edges");
+        check(prim.size() == g.order() - 1, "Prim MST has |V| - 1 edges");
+
+        double weightKruskal = g.kruskalWeight();
+        double weightPrim = g.primWeight();
+        check(Double.compare(weightKruskal, weightPrim) == 0, "Kruskal and Prim agree on total MST weight");
+        check(weightKruskal == 13.0, "Total MST weight is 13.0");
+    }
+
+    private static void testMaxFlowAndMinCut() {
+        WeightedDigraph<String> net = new WeightedDigraph<>();
+        // Classic flow network
+        net.addEdge("S", "A", 10.0);
+        net.addEdge("S", "B", 10.0);
+        net.addEdge("A", "B", 2.0);
+        net.addEdge("A", "T", 4.0);
+        net.addEdge("B", "T", 8.0);
+
+        double ekFlow = net.edmondsKarpMaxFlow("S", "T");
+        double ffFlow = net.fordFulkersonMaxFlow("S", "T");
+
+        check(Double.compare(ekFlow, 12.0) == 0, "Edmonds-Karp max flow is 12.0");
+        check(Double.compare(ffFlow, 12.0) == 0, "Ford-Fulkerson max flow is 12.0");
+
+        // Min-Cut verification (Max-Flow Min-Cut Theorem)
+        Set<WeightedEdge<String>> cut = net.minCut("S", "T");
+        check(!cut.isEmpty(), "Min-cut contains edges");
+        double cutCap = net.minCutCapacity("S", "T");
+        check(Double.compare(cutCap, ekFlow) == 0, "Max-Flow Min-Cut Theorem holds: flow == minCut capacity (12.0)");
+
+        // Max Bipartite Matching via Flow
+        Set<String> partX = Set.of("1", "2", "3");
+        Set<String> partY = Set.of("4", "5");
+        WeightedDigraph<String> bipNet = new WeightedDigraph<>();
+        bipNet.addEdge("1", "4", 1.0);
+        bipNet.addEdge("2", "4", 1.0);
+        bipNet.addEdge("2", "5", 1.0);
+        bipNet.addEdge("3", "5", 1.0);
+
+        int maxMatch = bipNet.maxBipartiteMatchingFlow(partX, partY);
+        check(maxMatch == 2, "Max bipartite matching via max-flow is 2");
     }
 
     // ------------------------------ HELPER FRAMEWORK

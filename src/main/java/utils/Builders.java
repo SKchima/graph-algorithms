@@ -105,4 +105,46 @@ public class Builders {
             return new Digraph<>();
         }
     }
+
+    public static WeightedUndirectedGraph<String> weightedUndirectedGraphBuilder(String filePath) {
+        WeightedUndirectedGraph<String> graph = new WeightedUndirectedGraph<>();
+        try (Scanner sc = new Scanner(new File(filePath))) {
+            while (sc.hasNextLine()) {
+                String line = sc.nextLine().trim();
+                if (line.isEmpty()) continue;
+                String[] tokens = line.split("\\s+");
+                if (tokens.length >= 3) {
+                    graph.addEdge(tokens[0], tokens[1], Double.parseDouble(tokens[2]));
+                } else if (tokens.length == 2) {
+                    graph.addEdge(tokens[0], tokens[1], 1.0);
+                } else if (tokens.length == 1) {
+                    graph.addVertex(tokens[0]);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error reading weighted undirected graph: " + e.getMessage());
+        }
+        return graph;
+    }
+
+    public static WeightedDigraph<String> weightedDigraphBuilder(String filePath) {
+        WeightedDigraph<String> graph = new WeightedDigraph<>();
+        try (Scanner sc = new Scanner(new File(filePath))) {
+            while (sc.hasNextLine()) {
+                String line = sc.nextLine().trim();
+                if (line.isEmpty()) continue;
+                String[] tokens = line.split("\\s+");
+                if (tokens.length >= 3) {
+                    graph.addEdge(tokens[0], tokens[1], Double.parseDouble(tokens[2]));
+                } else if (tokens.length == 2) {
+                    graph.addEdge(tokens[0], tokens[1], 1.0);
+                } else if (tokens.length == 1) {
+                    graph.addVertex(tokens[0]);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error reading weighted digraph: " + e.getMessage());
+        }
+        return graph;
+    }
 }
