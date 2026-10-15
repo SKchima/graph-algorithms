@@ -655,6 +655,165 @@ public class UndirectedGraph<V> extends Graph<V> {
         return answer;
     }
 
+    /**
+     * Algorithm: Edmonds' Blossom Algorithm (General Undirected Graph Maximum Matching)
+     * Handles odd cycles (blossoms) via dynamic cycle contraction.
+     * Complexity: O(V³), O(V + E) space
+     *
+     * @return Set of edges in a maximum cardinality matching for any undirected graph.
+     */
+    public Set<Edge<V>> maxMatchingBlossom() {
+        if (this.vertices.isEmpty() || this.edges.isEmpty()) {
+            return new HashSet<>();
+        }
+
+        List<Vertex<V>> vertexList = new ArrayList<>(this.vertices);
+        int n = vertexList.size();
+        Map<Vertex<V>, Integer> vertexToIndex = new HashMap<>(n * 2);
+        for (int i = 0; i < n; i++) {
+            vertexToIndex.put(vertexList.get(i), i);
+        }
+
+        int[][] adj = new int[n][];
+        for (int i = 0; i < n; i++) {
+            Vertex<V> u = vertexList.get(i);
+            Set<Vertex<V>> neighbors = this.adjacencyMap.get(u);
+            if (neighbors == null) {
+                adj[i] = new int[0];
+                continue;
+            }
+            int deg = 0;
+            for (Vertex<V> v : neighbors) {
+                if (!v.equals(u)) {
+                    deg++;
+                }
+            }
+            adj[i] = new int[deg];
+            int idx = 0;
+            for (Vertex<V> v : neighbors) {
+                if (!v.equals(u)) {
+                    adj[i][idx++] = vertexToIndex.get(v);
+                }
+            }
+        }
+
+        int[] match = new int[n];
+        Arrays.fill(match, -1);
+
+        // Greedy matching heuristic (ignoring self-loops)
+        for (int u = 0; u < n; u++) {
+            if (match[u] == -1) {
+                for (int v : adj[u]) {
+                    if (v != u && match[v] == -1) {
+                        match[u] = v;
+                        match[v] = u;
+                        break;
+                    }
+                }
+            }
+        }
+
+        int[] p = new int[n];
+        int[] base = new int[n];
+        boolean[] used = new boolean[n];
+        boolean[] blossom = new boolean[n];
+        int[] q = new int[n];
+        int[] auxLca = new int[n];
+        int[] timerRef = new int[1];
+
+        for (int i = 0; i < n; i++) {
+            if (match[i] == -1) {
+                int v = findAugmentingPathBlossom(i, n, adj, match, p, base, used, blossom, q, auxLca, timerRef);
+                while (v != -1) {
+                    int pv = p[v];
+                    int ppv = match[pv];
+                    match[v] = pv;
+                    match[pv] = v;
+                    v = ppv;
+                }
+            }
+        }
+
+        Set<Edge<V>> answer = new HashSet<>();
+        for (int i = 0; i < n; i++) {
+            if (match[i] > i) {
+                answer.add(new Edge<>(vertexList.get(i), vertexList.get(match[i])));
+            }
+        }
+        return answer;
+    }
+
+    /**
+     * Alias for {@link #maxMatchingBlossom()} to find maximum matching on general undirected graphs.
+     */
+    public Set<Edge<V>> maxMatchingGeneral() {
+        return maxMatchingBlossom();
+    }
+
+    /**
+     * Algorithm: Minimum Edge Cover via Blossom Maximum Matching & Gallai's Theorem
+     * An edge cover exists if and only if there are no isolated vertices.
+     * By Gallai's Theorem (1959): alpha'(G) + beta'(G) = |V| for graphs without isolated vertices.
+     * Complexity: O(V³), O(V + E) space
+     *
+     * @return Minimum edge cover set, or null if the graph has isolated vertices.
+     */
+    public Set<Edge<V>> minEdgeCover() {
+        return minEdgeCover(maxMatchingBlossom());
+    }
+
+    /**
+     * Algorithm: Minimum Edge Cover from a precomputed Maximum Matching
+     * Complexity: O(V + E) time, O(V + E) space
+     *
+     * @param maxMatching Precomputed maximum matching
+     * @return Minimum edge cover set, or null if matching is null or graph has isolated vertices.
+     */
+    public Set<Edge<V>> minEdgeCover(Set<Edge<V>> maxMatching) {
+        if (maxMatching == null) {
+            return null;
+        }
+        if (this.vertices.isEmpty()) {
+            return new HashSet<>();
+        }
+
+        for (Vertex<V> v : this.vertices) {
+            if (degreeOf(v) == 0) {
+                return null;
+            }
+        }
+
+        Set<Edge<V>> cover = new HashSet<>(maxMatching);
+        Set<Vertex<V>> covered = new HashSet<>();
+        for (Edge<V> e : maxMatching) {
+            covered.add(e.from);
+            covered.add(e.to);
+        }
+
+        for (Vertex<V> v : this.vertices) {
+            if (!covered.contains(v)) {
+                Set<Vertex<V>> neighbors = this.adjacencyMap.get(v);
+                Vertex<V> neighbor = null;
+                for (Vertex<V> nb : neighbors) {
+                    if (!nb.equals(v)) {
+                        neighbor = nb;
+                        break;
+                    }
+                }
+                if (neighbor == null && !neighbors.isEmpty()) {
+                    neighbor = neighbors.iterator().next();
+                }
+                if (neighbor != null) {
+                    cover.add(new Edge<>(v, neighbor));
+                    covered.add(v);
+                    covered.add(neighbor);
+                }
+            }
+        }
+
+        return cover;
+    }
+
     // -------------------------- HELPERS -------------------- //
 
     private boolean hasCyclesDFS(Set<Vertex<V>> visited, Vertex<V> current, Vertex<V> previous) {
@@ -895,5 +1054,87 @@ public class UndirectedGraph<V> extends Graph<V> {
 
         distances.put(u, Integer.MAX_VALUE);
         return false;
+    }
+
+    private int findAugmentingPathBlossom(int root, int n, int[][] adj, int[] match,
+            int[] p, int[] base, boolean[] used, boolean[] blossom, int[] q, int[] auxLca, int[] timerRef) {
+        Arrays.fill(used, false);
+        Arrays.fill(p, -1);
+        for (int i = 0; i < n; i++) {
+            base[i] = i;
+        }
+
+        used[root] = true;
+        int qh = 0;
+        int qt = 0;
+        q[qt++] = root;
+
+        while (qh < qt) {
+            int v = q[qh++];
+            for (int to : adj[v]) {
+                if (base[v] == base[to] || match[v] == to) {
+                    continue;
+                }
+
+                if (to == root || (match[to] != -1 && p[match[to]] != -1)) {
+                    int curbase = lcaBlossom(v, to, base, match, p, auxLca, timerRef);
+                    Arrays.fill(blossom, false);
+                    markPathBlossom(v, curbase, to, base, match, p, blossom);
+                    markPathBlossom(to, curbase, v, base, match, p, blossom);
+                    for (int i = 0; i < n; i++) {
+                        if (blossom[base[i]]) {
+                            base[i] = curbase;
+                            if (!used[i]) {
+                                used[i] = true;
+                                q[qt++] = i;
+                            }
+                        }
+                    }
+                } else if (p[to] == -1) {
+                    p[to] = v;
+                    if (match[to] == -1) {
+                        return to;
+                    }
+                    to = match[to];
+                    used[to] = true;
+                    q[qt++] = to;
+                }
+            }
+        }
+        return -1;
+    }
+
+    private int lcaBlossom(int a, int b, int[] base, int[] match, int[] p, int[] auxLca, int[] timerRef) {
+        int timer = ++timerRef[0];
+        if (timerRef[0] == Integer.MAX_VALUE) {
+            Arrays.fill(auxLca, 0);
+            timerRef[0] = 1;
+            timer = 1;
+        }
+        while (true) {
+            a = base[a];
+            auxLca[a] = timer;
+            if (match[a] == -1) {
+                break;
+            }
+            a = p[match[a]];
+        }
+        while (true) {
+            b = base[b];
+            if (auxLca[b] == timer) {
+                return b;
+            }
+            b = p[match[b]];
+        }
+    }
+
+    private void markPathBlossom(int v, int b, int children, int[] base, int[] match, int[] p, boolean[] blossom) {
+        while (base[v] != b) {
+            blossom[base[v]] = true;
+            blossom[base[match[v]]] = true;
+            p[v] = children;
+            children = match[v];
+            v = p[match[v]];
+        }
     }
 }

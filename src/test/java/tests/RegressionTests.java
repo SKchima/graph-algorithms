@@ -65,6 +65,12 @@ public class RegressionTests {
         runTest("MST: Kruskal vs Prim (Dual Equivalence & DSU)", RegressionTests::testMinimumSpanningTreeKruskalAndPrim);
         runTest("Flow Networks: Edmonds-Karp, Ford-Fulkerson & Min-Cut", RegressionTests::testMaxFlowAndMinCut);
 
+        // Edmonds' Blossom & Minimum Edge Cover Tests
+        System.out.println("\n--- EDMONDS BLOSSOM & MINIMUM EDGE COVER TESTS ---");
+        runTest("Blossom: Odd Cycles, Blossoms & General Matching", RegressionTests::testEdmondsBlossomGeneralMatching);
+        runTest("Blossom vs Hopcroft-Karp: Bipartite Equivalence & Invariants", RegressionTests::testBlossomHopcroftKarpEquivalence);
+        runTest("Edge Cover: Gallai Theorem Dual Invariant & Boundary Cases", RegressionTests::testMinimumEdgeCoverAndGallaiTheorem);
+
         System.out.println("\n======================================");
         System.out.println("SUMMARY:");
         System.out.println("PASSED: " + testsPassed);
@@ -891,6 +897,371 @@ public class RegressionTests {
 
         int maxMatch = bipNet.maxBipartiteMatchingFlow(partX, partY);
         check(maxMatch == 2, "Max bipartite matching via max-flow is 2");
+    }
+
+    // ------------------------------ EDMONDS BLOSSOM & EDGE COVER TESTS ------------------------------ //
+
+    private static void testEdmondsBlossomGeneralMatching() {
+        // 1. Triangle C3 (Odd cycle, non-bipartite)
+        UndirectedGraph<Integer> c3 = new UndirectedGraph<>();
+        c3.addEdge(1, 2);
+        c3.addEdge(2, 3);
+        c3.addEdge(3, 1);
+        Set<UndirectedGraph.Edge<Integer>> matchC3 = c3.maxMatchingBlossom();
+        check(matchC3 != null && matchC3.size() == 1, "C3 Blossom matching size is 1");
+        checkValidMatching(c3, matchC3);
+
+        // 2. Cycle of 5 C5 (Odd cycle, non-bipartite)
+        UndirectedGraph<Integer> c5 = new UndirectedGraph<>();
+        c5.addEdge(1, 2);
+        c5.addEdge(2, 3);
+        c5.addEdge(3, 4);
+        c5.addEdge(4, 5);
+        c5.addEdge(5, 1);
+        Set<UndirectedGraph.Edge<Integer>> matchC5 = c5.maxMatchingBlossom();
+        check(matchC5 != null && matchC5.size() == 2, "C5 Blossom matching size is 2");
+        checkValidMatching(c5, matchC5);
+
+        // 3. Complete Graph K4
+        UndirectedGraph<String> k4 = loadUndirectedGraph("u_complete_k4.txt");
+        Set<UndirectedGraph.Edge<String>> matchK4 = k4.maxMatchingBlossom();
+        check(matchK4 != null && matchK4.size() == 2, "K4 Blossom matching is 2 (perfect matching)");
+        checkValidMatching(k4, matchK4);
+
+        // 4. Complete Graph K5
+        UndirectedGraph<Integer> k5 = new UndirectedGraph<>();
+        for (int i = 1; i <= 5; i++) {
+            for (int j = i + 1; j <= 5; j++) {
+                k5.addEdge(i, j);
+            }
+        }
+        Set<UndirectedGraph.Edge<Integer>> matchK5 = k5.maxMatchingBlossom();
+        check(matchK5 != null && matchK5.size() == 2, "K5 Blossom matching is 2");
+        checkValidMatching(k5, matchK5);
+
+        // 5. Petersen Graph (10 vertices, 15 edges, non-bipartite, perfect matching = 5)
+        UndirectedGraph<Integer> petersen = new UndirectedGraph<>();
+        // Outer 5-cycle: 0-1-2-3-4-0
+        petersen.addEdge(0, 1);
+        petersen.addEdge(1, 2);
+        petersen.addEdge(2, 3);
+        petersen.addEdge(3, 4);
+        petersen.addEdge(4, 0);
+        // Inner 5-star: 5-7-9-6-8-5
+        petersen.addEdge(5, 7);
+        petersen.addEdge(7, 9);
+        petersen.addEdge(9, 6);
+        petersen.addEdge(6, 8);
+        petersen.addEdge(8, 5);
+        // Spokes: 0-5, 1-6, 2-7, 3-8, 4-9
+        petersen.addEdge(0, 5);
+        petersen.addEdge(1, 6);
+        petersen.addEdge(2, 7);
+        petersen.addEdge(3, 8);
+        petersen.addEdge(4, 9);
+        check(petersen.order() == 10 && petersen.size() == 15, "Petersen graph constructed with 10 vertices and 15 edges");
+        check(!petersen.isBipartite(), "Petersen graph is non-bipartite");
+        Set<UndirectedGraph.Edge<Integer>> matchPetersen = petersen.maxMatchingBlossom();
+        check(matchPetersen != null && matchPetersen.size() == 5, "Petersen graph has perfect matching of size 5");
+        checkValidMatching(petersen, matchPetersen);
+
+        // 6. Nested Blossoms (Two blossoms sharing vertices connected by stem)
+        UndirectedGraph<Integer> nested = new UndirectedGraph<>();
+        // Stem: 1-2
+        nested.addEdge(1, 2);
+        // Blossom 1: 2-3-4-2
+        nested.addEdge(2, 3);
+        nested.addEdge(3, 4);
+        nested.addEdge(4, 2);
+        // Blossom 2: 4-5-6-4
+        nested.addEdge(4, 5);
+        nested.addEdge(5, 6);
+        nested.addEdge(6, 4);
+        Set<UndirectedGraph.Edge<Integer>> matchNested = nested.maxMatchingBlossom();
+        check(matchNested != null && matchNested.size() == 3, "Nested blossoms graph has max matching of size 3");
+        checkValidMatching(nested, matchNested);
+
+        // 7. Disconnected Mixed Graph (C3 + C4)
+        UndirectedGraph<Integer> mixed = new UndirectedGraph<>();
+        mixed.addEdge(1, 2);
+        mixed.addEdge(2, 3);
+        mixed.addEdge(3, 1);
+        mixed.addEdge(4, 5);
+        mixed.addEdge(5, 6);
+        mixed.addEdge(6, 7);
+        mixed.addEdge(7, 4);
+        Set<UndirectedGraph.Edge<Integer>> matchMixed = mixed.maxMatchingBlossom();
+        check(matchMixed != null && matchMixed.size() == 3, "Mixed disconnected graph matching is 3 (1 from C3 + 2 from C4)");
+        checkValidMatching(mixed, matchMixed);
+
+        // 8. Boundary cases: Empty graph, isolated vertices, single edge
+        UndirectedGraph<Integer> emptyG = new UndirectedGraph<>();
+        check(emptyG.maxMatchingBlossom() != null && emptyG.maxMatchingBlossom().isEmpty(), "Empty graph matching is empty");
+
+        UndirectedGraph<Integer> isolatedG = new UndirectedGraph<>();
+        isolatedG.addVertex(1);
+        isolatedG.addVertex(2);
+        isolatedG.addVertex(3);
+        check(isolatedG.maxMatchingBlossom() != null && isolatedG.maxMatchingBlossom().isEmpty(), "Isolated vertices matching is empty");
+
+        UndirectedGraph<Integer> singleEdgeG = new UndirectedGraph<>();
+        singleEdgeG.addEdge(1, 2);
+        singleEdgeG.addVertex(3);
+        check(singleEdgeG.maxMatchingBlossom().size() == 1, "Graph with single edge and isolated vertex has matching of size 1");
+
+        // Self-loop test: edge (1,1) and edge (1,2)
+        UndirectedGraph<Integer> selfLoopG = new UndirectedGraph<>();
+        selfLoopG.addEdge(1, 1);
+        selfLoopG.addEdge(1, 2);
+        Set<UndirectedGraph.Edge<Integer>> matchSelf = selfLoopG.maxMatchingBlossom();
+        check(matchSelf != null && matchSelf.size() == 1, "Graph with self-loop (1,1) and edge (1,2) has matching of size 1");
+        checkValidMatching(selfLoopG, matchSelf);
+
+        // Self-loop only test: edge (1,1)
+        UndirectedGraph<Integer> onlySelfLoop = new UndirectedGraph<>();
+        onlySelfLoop.addEdge(1, 1);
+        Set<UndirectedGraph.Edge<Integer>> matchOnlySelf = onlySelfLoop.maxMatchingBlossom();
+        check(matchOnlySelf != null && matchOnlySelf.isEmpty(), "Graph with only self-loop has empty matching");
+
+        // 9. Grötzsch Graph (11 vertices, 20 edges, triangle-free, chromatic number 4, non-bipartite)
+        UndirectedGraph<Integer> grotzsch = new UndirectedGraph<>();
+        for (int i = 0; i < 5; i++) grotzsch.addEdge(i, (i + 1) % 5);
+        for (int i = 5; i <= 9; i++) grotzsch.addEdge(10, i);
+        grotzsch.addEdge(5, 1); grotzsch.addEdge(5, 4);
+        grotzsch.addEdge(6, 0); grotzsch.addEdge(6, 2);
+        grotzsch.addEdge(7, 1); grotzsch.addEdge(7, 3);
+        grotzsch.addEdge(8, 2); grotzsch.addEdge(8, 4);
+        grotzsch.addEdge(9, 3); grotzsch.addEdge(9, 0);
+        Set<UndirectedGraph.Edge<Integer>> matchGrotzsch = grotzsch.maxMatchingBlossom();
+        check(matchGrotzsch != null && matchGrotzsch.size() == 5, "Grötzsch graph has max matching of size 5");
+        checkValidMatching(grotzsch, matchGrotzsch);
+
+        // 10. Deep 3-Level Nested Blossoms
+        // Stem: 0-1, Blossom 1: 1-2-3-1, Blossom 2: 3-4-5-3, Blossom 3: 5-6-7-5, Tail: 7-8
+        UndirectedGraph<Integer> deepNested = new UndirectedGraph<>();
+        deepNested.addEdge(0, 1);
+        deepNested.addEdge(1, 2); deepNested.addEdge(2, 3); deepNested.addEdge(3, 1);
+        deepNested.addEdge(3, 4); deepNested.addEdge(4, 5); deepNested.addEdge(5, 3);
+        deepNested.addEdge(5, 6); deepNested.addEdge(6, 7); deepNested.addEdge(7, 5);
+        deepNested.addEdge(7, 8);
+        Set<UndirectedGraph.Edge<Integer>> matchDeep = deepNested.maxMatchingBlossom();
+        check(matchDeep != null && matchDeep.size() == 4, "Deep 3-level nested blossoms graph has max matching of size 4");
+        checkValidMatching(deepNested, matchDeep);
+
+        // 11. Odd Wheels W5 (hub + C4) and W6 (hub + C5)
+        UndirectedGraph<Integer> w5 = new UndirectedGraph<>();
+        for (int i = 1; i <= 4; i++) {
+            w5.addEdge(i, (i % 4) + 1);
+            w5.addEdge(0, i); // hub 0
+        }
+        Set<UndirectedGraph.Edge<Integer>> matchW5 = w5.maxMatchingBlossom();
+        check(matchW5 != null && matchW5.size() == 2, "Wheel W5 has matching of size 2");
+        checkValidMatching(w5, matchW5);
+
+        UndirectedGraph<Integer> w6 = new UndirectedGraph<>();
+        for (int i = 1; i <= 5; i++) {
+            w6.addEdge(i, (i % 5) + 1);
+            w6.addEdge(0, i); // hub 0
+        }
+        Set<UndirectedGraph.Edge<Integer>> matchW6 = w6.maxMatchingBlossom();
+        check(matchW6 != null && matchW6.size() == 3, "Wheel W6 has perfect matching of size 3");
+        checkValidMatching(w6, matchW6);
+    }
+
+    private static void testBlossomHopcroftKarpEquivalence() {
+        // Compare Blossom vs Hopcroft-Karp on all bipartite test suites
+        String[] bipartiteFiles = {"u_bipartite_matching.txt", "u_bipartite_c4.txt", "u_disconnected.txt"};
+        for (String file : bipartiteFiles) {
+            @SuppressWarnings("unchecked")
+            UndirectedGraph<String> g = (UndirectedGraph<String>) loadUndirectedGraph(file);
+            Set<UndirectedGraph.Edge<String>> hk = g.maxMatching();
+            Set<UndirectedGraph.Edge<String>> blossom = g.maxMatchingBlossom();
+            Set<UndirectedGraph.Edge<String>> general = g.maxMatchingGeneral();
+
+            check(hk != null, "Hopcroft-Karp returns matching for " + file);
+            check(blossom != null, "Blossom returns matching for " + file);
+            check(general != null, "General returns matching for " + file);
+            check(hk.size() == blossom.size(), "Blossom size agrees with Hopcroft-Karp on " + file + " (size: " + hk.size() + ")");
+            check(blossom.size() == general.size(), "maxMatchingGeneral matches maxMatchingBlossom on " + file);
+            checkValidMatching(g, blossom);
+        }
+    }
+
+    private static void testMinimumEdgeCoverAndGallaiTheorem() {
+        // Gallai's Theorem: alpha'(G) + beta'(G) = |V| for graphs without isolated vertices
+
+        // 1. Triangle C3
+        UndirectedGraph<Integer> c3 = new UndirectedGraph<>();
+        c3.addEdge(1, 2);
+        c3.addEdge(2, 3);
+        c3.addEdge(3, 1);
+        Set<UndirectedGraph.Edge<Integer>> mC3 = c3.maxMatchingBlossom();
+        Set<UndirectedGraph.Edge<Integer>> covC3 = c3.minEdgeCover();
+        check(covC3 != null && covC3.size() == 2, "C3 min edge cover size is 2");
+        check(mC3.size() + covC3.size() == c3.order(), "Gallai Theorem holds for C3: 1 + 2 = 3");
+        checkValidEdgeCover(c3, covC3);
+
+        // 2. Cycle 4 (C4)
+        UndirectedGraph<Integer> c4 = new UndirectedGraph<>();
+        c4.addEdge(1, 2);
+        c4.addEdge(2, 3);
+        c4.addEdge(3, 4);
+        c4.addEdge(4, 1);
+        Set<UndirectedGraph.Edge<Integer>> mC4 = c4.maxMatchingBlossom();
+        Set<UndirectedGraph.Edge<Integer>> covC4 = c4.minEdgeCover();
+        check(covC4 != null && covC4.size() == 2, "C4 min edge cover size is 2");
+        check(mC4.size() + covC4.size() == c4.order(), "Gallai Theorem holds for C4: 2 + 2 = 4");
+        checkValidEdgeCover(c4, covC4);
+
+        // 3. Cycle 5 (C5)
+        UndirectedGraph<Integer> c5 = new UndirectedGraph<>();
+        c5.addEdge(1, 2);
+        c5.addEdge(2, 3);
+        c5.addEdge(3, 4);
+        c5.addEdge(4, 5);
+        c5.addEdge(5, 1);
+        Set<UndirectedGraph.Edge<Integer>> mC5 = c5.maxMatchingBlossom();
+        Set<UndirectedGraph.Edge<Integer>> covC5 = c5.minEdgeCover();
+        check(covC5 != null && covC5.size() == 3, "C5 min edge cover size is 3");
+        check(mC5.size() + covC5.size() == c5.order(), "Gallai Theorem holds for C5: 2 + 3 = 5");
+        checkValidEdgeCover(c5, covC5);
+
+        // 4. Complete Graph K4
+        UndirectedGraph<String> k4 = loadUndirectedGraph("u_complete_k4.txt");
+        Set<UndirectedGraph.Edge<String>> mK4 = k4.maxMatchingBlossom();
+        Set<UndirectedGraph.Edge<String>> covK4 = k4.minEdgeCover();
+        check(covK4 != null && covK4.size() == 2, "K4 min edge cover size is 2");
+        check(mK4.size() + covK4.size() == k4.order(), "Gallai Theorem holds for K4: 2 + 2 = 4");
+        checkValidEdgeCover(k4, covK4);
+
+        // 5. Complete Graph K5
+        UndirectedGraph<Integer> k5 = new UndirectedGraph<>();
+        for (int i = 1; i <= 5; i++) {
+            for (int j = i + 1; j <= 5; j++) {
+                k5.addEdge(i, j);
+            }
+        }
+        Set<UndirectedGraph.Edge<Integer>> mK5 = k5.maxMatchingBlossom();
+        Set<UndirectedGraph.Edge<Integer>> covK5 = k5.minEdgeCover();
+        check(covK5 != null && covK5.size() == 3, "K5 min edge cover size is 3");
+        check(mK5.size() + covK5.size() == k5.order(), "Gallai Theorem holds for K5: 2 + 3 = 5");
+        checkValidEdgeCover(k5, covK5);
+
+        // 6. Petersen Graph
+        UndirectedGraph<Integer> petersen = new UndirectedGraph<>();
+        petersen.addEdge(0, 1);
+        petersen.addEdge(1, 2);
+        petersen.addEdge(2, 3);
+        petersen.addEdge(3, 4);
+        petersen.addEdge(4, 0);
+        petersen.addEdge(5, 7);
+        petersen.addEdge(7, 9);
+        petersen.addEdge(9, 6);
+        petersen.addEdge(6, 8);
+        petersen.addEdge(8, 5);
+        petersen.addEdge(0, 5);
+        petersen.addEdge(1, 6);
+        petersen.addEdge(2, 7);
+        petersen.addEdge(3, 8);
+        petersen.addEdge(4, 9);
+        Set<UndirectedGraph.Edge<Integer>> mPet = petersen.maxMatchingBlossom();
+        Set<UndirectedGraph.Edge<Integer>> covPet = petersen.minEdgeCover();
+        check(covPet != null && covPet.size() == 5, "Petersen min edge cover size is 5");
+        check(mPet.size() + covPet.size() == petersen.order(), "Gallai Theorem holds for Petersen: 5 + 5 = 10");
+        checkValidEdgeCover(petersen, covPet);
+
+        // 7. Bipartite matching file
+        UndirectedGraph<String> bip = loadUndirectedGraph("u_bipartite_matching.txt");
+        Set<UndirectedGraph.Edge<String>> mBip = bip.maxMatchingBlossom();
+        Set<UndirectedGraph.Edge<String>> covBip = bip.minEdgeCover();
+        check(covBip != null && covBip.size() == 3, "u_bipartite_matching min edge cover size is 3");
+        check(mBip.size() + covBip.size() == bip.order(), "Gallai Theorem holds for u_bipartite_matching: 2 + 3 = 5");
+        checkValidEdgeCover(bip, covBip);
+
+        // 8. Overloaded minEdgeCover(matching)
+        Set<UndirectedGraph.Edge<String>> covFromPrecomputed = bip.minEdgeCover(bip.maxMatching());
+        check(covFromPrecomputed != null && covFromPrecomputed.size() == 3, "Precomputed matching produces identical edge cover size");
+
+        // 9. Grötzsch Graph Gallai's Theorem
+        UndirectedGraph<Integer> grotzsch = new UndirectedGraph<>();
+        for (int i = 0; i < 5; i++) grotzsch.addEdge(i, (i + 1) % 5);
+        for (int i = 5; i <= 9; i++) grotzsch.addEdge(10, i);
+        grotzsch.addEdge(5, 1); grotzsch.addEdge(5, 4);
+        grotzsch.addEdge(6, 0); grotzsch.addEdge(6, 2);
+        grotzsch.addEdge(7, 1); grotzsch.addEdge(7, 3);
+        grotzsch.addEdge(8, 2); grotzsch.addEdge(8, 4);
+        grotzsch.addEdge(9, 3); grotzsch.addEdge(9, 0);
+        Set<UndirectedGraph.Edge<Integer>> mGrotzsch = grotzsch.maxMatchingBlossom();
+        Set<UndirectedGraph.Edge<Integer>> covGrotzsch = grotzsch.minEdgeCover();
+        check(covGrotzsch != null && covGrotzsch.size() == 6, "Grötzsch min edge cover size is 6");
+        check(mGrotzsch.size() + covGrotzsch.size() == grotzsch.order(), "Gallai Theorem holds for Grötzsch: 5 + 6 = 11");
+        checkValidEdgeCover(grotzsch, covGrotzsch);
+
+        // 10. Deep Nested Blossoms Gallai's Theorem
+        UndirectedGraph<Integer> deepNested = new UndirectedGraph<>();
+        deepNested.addEdge(0, 1);
+        deepNested.addEdge(1, 2); deepNested.addEdge(2, 3); deepNested.addEdge(3, 1);
+        deepNested.addEdge(3, 4); deepNested.addEdge(4, 5); deepNested.addEdge(5, 3);
+        deepNested.addEdge(5, 6); deepNested.addEdge(6, 7); deepNested.addEdge(7, 5);
+        deepNested.addEdge(7, 8);
+        Set<UndirectedGraph.Edge<Integer>> mDeep = deepNested.maxMatchingBlossom();
+        Set<UndirectedGraph.Edge<Integer>> covDeep = deepNested.minEdgeCover();
+        check(covDeep != null && covDeep.size() == 5, "Deep nested blossoms min edge cover size is 5");
+        check(mDeep.size() + covDeep.size() == deepNested.order(), "Gallai Theorem holds for deep nested: 4 + 5 = 9");
+        checkValidEdgeCover(deepNested, covDeep);
+
+        // 11. Self-Loop Edge Covers & Gallai Invariant
+        UndirectedGraph<Integer> selfOnly = new UndirectedGraph<>();
+        selfOnly.addEdge(1, 1);
+        Set<UndirectedGraph.Edge<Integer>> covSelfOnly = selfOnly.minEdgeCover();
+        check(covSelfOnly != null && covSelfOnly.size() == 1, "Self-loop only has min edge cover of size 1");
+        check(selfOnly.maxMatchingBlossom().size() + covSelfOnly.size() == selfOnly.order(), "Gallai Theorem for self-loop only: 0 + 1 = 1");
+        checkValidEdgeCover(selfOnly, covSelfOnly);
+
+        UndirectedGraph<Integer> selfWithEdge = new UndirectedGraph<>();
+        selfWithEdge.addEdge(1, 1);
+        selfWithEdge.addEdge(1, 2);
+        Set<UndirectedGraph.Edge<Integer>> covSelfEdge = selfWithEdge.minEdgeCover();
+        check(covSelfEdge != null && covSelfEdge.size() == 1, "Graph with (1,1) and (1,2) has min edge cover of size 1");
+        check(selfWithEdge.maxMatchingBlossom().size() + covSelfEdge.size() == selfWithEdge.order(), "Gallai Theorem for (1,1) and (1,2): 1 + 1 = 2");
+        checkValidEdgeCover(selfWithEdge, covSelfEdge);
+
+        // 12. Boundary cases: Isolated vertices and empty graph
+        UndirectedGraph<Integer> isolatedG = new UndirectedGraph<>();
+        isolatedG.addEdge(1, 2);
+        isolatedG.addVertex(3); // isolated vertex
+        check(isolatedG.minEdgeCover() == null, "Graph with isolated vertex returns null for minEdgeCover");
+
+        UndirectedGraph<Integer> allIsolated = new UndirectedGraph<>();
+        allIsolated.addVertex(1);
+        check(allIsolated.minEdgeCover() == null, "Graph with only isolated vertex returns null for minEdgeCover");
+
+        UndirectedGraph<Integer> emptyG = new UndirectedGraph<>();
+        check(emptyG.minEdgeCover() != null && emptyG.minEdgeCover().isEmpty(), "Empty graph minEdgeCover is empty set");
+        check(emptyG.minEdgeCover(null) == null, "minEdgeCover(null) returns null");
+    }
+
+    private static <V> void checkValidMatching(UndirectedGraph<V> g, Set<UndirectedGraph.Edge<V>> matching) {
+        Set<Graph.Vertex<V>> seen = new HashSet<>();
+        for (UndirectedGraph.Edge<V> e : matching) {
+            check(g.getEdges().contains(e), "Matched edge " + e + " must exist in graph");
+            check(!seen.contains(e.from), "Vertex " + e.from + " appears in multiple matched edges");
+            check(!seen.contains(e.to), "Vertex " + e.to + " appears in multiple matched edges");
+            seen.add(e.from);
+            seen.add(e.to);
+        }
+    }
+
+    private static <V> void checkValidEdgeCover(UndirectedGraph<V> g, Set<UndirectedGraph.Edge<V>> cover) {
+        Set<Graph.Vertex<V>> covered = new HashSet<>();
+        for (UndirectedGraph.Edge<V> e : cover) {
+            check(g.getEdges().contains(e), "Cover edge " + e + " must exist in graph");
+            covered.add(e.from);
+            covered.add(e.to);
+        }
+        for (Graph.Vertex<V> v : g.getVertices()) {
+            check(covered.contains(v), "Vertex " + v + " must be covered by at least one edge in edge cover");
+        }
     }
 
     // ------------------------------ HELPER FRAMEWORK

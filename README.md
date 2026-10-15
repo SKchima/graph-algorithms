@@ -87,6 +87,8 @@ All algorithms are deterministic and operate within polynomial time bounds relat
 | Bipartite Graphs | Maximum Matching (Hopcroft-Karp) | $O(E \sqrt{V})$ | $O(V)$ |
 | Bipartite Graphs | Minimum Vertex Cover (König's Theorem) | $O(E \sqrt{V})$ | $O(V)$ |
 | Bipartite Graphs | Maximum Independent Set (Gallai's Identity) | $O(E \sqrt{V})$ | $O(V)$ |
+| General Graphs | Maximum Matching (Edmonds' Blossom Algorithm) | $O(V^3)$ | $O(V + E)$ |
+| General Graphs | Minimum Edge Cover (Gallai's Theorem) | $O(V^3)$ | $O(V + E)$ |
 
 ### Weighted Graphs (`WeightedUndirectedGraph<V>`, `WeightedDigraph<V>`)
 
@@ -104,5 +106,5 @@ All algorithms are deterministic and operate within polynomial time bounds relat
 
 ## Verification and Testing
 
-- **Regression Suite**: 30 test procedures verifying structural properties, boundary conditions, and mathematical invariants ($|M| = |C|$, $\text{max-flow} = \text{min-cut}$, $W_{\text{Kruskal}} = W_{\text{Prim}}$).
+- **Regression Suite**: 33 test procedures verifying structural properties, boundary conditions, and mathematical invariants ($|M| = |C|$, $\alpha'(G) + \beta'(G) = |V|$, $\text{max-flow} = \text{min-cut}$, $W_{\text{Kruskal}} = W_{\text{Prim}}$).
 - **Stress Suite**: Scalability verification on graphs containing up to $5 \times 10^3$ vertices and $2 \times 10^4$ edges.
